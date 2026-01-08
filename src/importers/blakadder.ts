@@ -6,7 +6,8 @@ export const blakadderImporter: Importer = {
 
   async fetch(): Promise<ImportResult> {
     const data = await readFile('data/sources/blakadder.json', 'utf-8')
-    const devices = JSON.parse(data)
+    const parsed = JSON.parse(data)
+    const devices = Array.isArray(parsed) ? parsed : parsed.devices || []
 
     return {
       source: 'blakadder',

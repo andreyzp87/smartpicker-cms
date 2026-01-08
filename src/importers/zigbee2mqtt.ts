@@ -7,7 +7,8 @@ export const zigbee2mqttImporter: Importer = {
   async fetch(): Promise<ImportResult> {
     // Read from pre-extracted JSON
     const data = await readFile('data/sources/zigbee2mqtt.json', 'utf-8')
-    const devices = JSON.parse(data)
+    const parsed = JSON.parse(data)
+    const devices = Array.isArray(parsed) ? parsed : parsed.devices || []
 
     return {
       source: 'zigbee2mqtt',

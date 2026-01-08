@@ -6,7 +6,8 @@ export const zwaveJsImporter: Importer = {
 
   async fetch(): Promise<ImportResult> {
     const data = await readFile('data/sources/zwave-js.json', 'utf-8')
-    const devices = JSON.parse(data)
+    const parsed = JSON.parse(data)
+    const devices = Array.isArray(parsed) ? parsed : parsed.devices || []
 
     return {
       source: 'zwave-js',

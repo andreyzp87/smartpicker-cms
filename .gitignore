@@ -12,8 +12,11 @@ admin/dist/
 .env.local
 .env.*.local
 
-# Generated exports (keep sources, ignore generated)
-data/exports/
+# Data directories (temporary imports and generated exports)
+data/sources/*
+!data/sources/.gitkeep
+data/exports/*
+!data/exports/.gitkeep
 
 # IDE
 .vscode/

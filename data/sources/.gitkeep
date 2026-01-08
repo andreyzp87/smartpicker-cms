@@ -1,0 +1,17 @@
+# data/sources/
+
+This directory stores temporary external data sources that are periodically imported by the server.
+
+The following files will be downloaded/generated here:
+- zigbee2mqtt.json - Device data from Zigbee2MQTT
+- blakadder.json - Device data from Blakadder's database
+- zwave-js.json - Device data from Z-Wave JS
+
+These files are NOT committed to git as they are:
+1. Large and change frequently
+2. Generated/downloaded by import jobs
+3. Temporary staging data before processing into the database
+
+To extract fresh source data, run the extraction scripts:
+- `tsx scripts/extract-z2m-devices.ts` (for Zigbee2MQTT data)
+- Or use the CLI import commands when implemented

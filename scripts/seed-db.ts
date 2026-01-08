@@ -198,7 +198,11 @@ async function seed() {
 
     // Get manufacturer IDs
     const getManufacturerId = async (slug: string) => {
-      const [mfg] = await db.select().from(manufacturers).where(eq(manufacturers.slug, slug)).limit(1)
+      const [mfg] = await db
+        .select()
+        .from(manufacturers)
+        .where(eq(manufacturers.slug, slug))
+        .limit(1)
       return mfg?.id || null
     }
 
