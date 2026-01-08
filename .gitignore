@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+admin/dist/
+*.tsbuildinfo
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Generated exports (keep sources, ignore generated)
+data/exports/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Drizzle
+drizzle/meta/
+
+# Docker volumes (if local)
+postgres_data/
+redis_data/
+
+# Lock files (keep pnpm-lock.yaml, ignore others if switching package managers)
+# package-lock.json
+# yarn.lock
+
+# Misc
+*.pid
+*.seed
+*.pid.lock

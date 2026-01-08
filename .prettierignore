@@ -1,0 +1,6 @@
+dist
+node_modules
+admin/dist
+data
+pnpm-lock.yaml
+*.md

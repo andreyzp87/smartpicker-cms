@@ -1,0 +1,338 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+SmartPicker CMS is the backend and admin interface for SmartPicker.io - a "PCPartPicker for Smart Home" device compatibility database. This repo contains:
+- **Backend API** (Hono + tRPC) serving data to the admin UI and public frontend
+- **Admin UI** (React 19 SPA) for managing products, manufacturers, hubs, and compatibility data
+- **Data Import System** (BullMQ workers) for ingesting device data from external sources (Zigbee2MQTT, Blakadder, Z-Wave JS)
+- **JSON Export System** for generating static data consumed by the public Astro frontend (separate repo)
+
+**Note:** This is a two-repository architecture. The public-facing website lives in `smartpicker-web` (Astro 5, deployed to Cloudflare Pages). This CMS repo exports JSON data that the web frontend consumes at build time.
+
+## Essential Commands
+
+### Development Setup
+
+```bash
+# Start local PostgreSQL and Redis
+docker compose up -d
+
+# Install dependencies (root)
+pnpm install
+
+# Install admin dependencies
+cd admin && pnpm install
+
+# Run database migrations
+pnpm db:push
+
+# Start backend API server (dev mode with hot reload)
+pnpm dev
+
+# Start admin UI (separate terminal)
+cd admin && pnpm dev
+
+# Start background worker (for job processing)
+pnpm dev:worker
+```
+
+### Database Commands
+
+```bash
+# Generate new migration from schema changes
+pnpm db:generate
+
+# Apply migrations
+pnpm db:migrate
+
+# Push schema changes directly (dev only)
+pnpm db:push
+
+# Open Drizzle Studio (visual DB browser)
+pnpm db:studio
+```
+
+### Build and Production
+
+```bash
+# Build both backend and admin UI
+pnpm build
+
+# Build only backend server
+pnpm build:server
+
+# Build only admin UI
+pnpm build:admin
+
+# Start production server
+pnpm start
+
+# Start production worker
+pnpm start:worker
+```
+
+### CLI Commands
+
+```bash
+# Run CLI commands (currently basic skeleton)
+pnpm cli import
+```
+
+### Code Quality
+
+```bash
+# Type checking
+pnpm typecheck
+
+# Linting
+pnpm lint
+
+# Format code
+pnpm format
+```
+
+## Architecture Overview
+
+### Tech Stack
+
+- **Runtime:** Node.js 24 (ESM modules)
+- **Package Manager:** pnpm 9.15.0
+- **HTTP Server:** Hono (serves both API and static admin files)
+- **API Layer:** tRPC v11 (end-to-end type safety)
+- **Database:** PostgreSQL 16 (via Drizzle ORM)
+- **Cache/Queue:** Redis 7 + BullMQ
+- **Admin UI:** React 19 + TanStack Query + shadcn/ui + Tailwind CSS 4
+- **Validation:** Zod
+- **Build:** tsup (backend), Vite (admin)
+
+### Project Structure
+
+```
+src/
+├── index.ts              # Hono server entry point
+├── worker.ts             # BullMQ worker process
+├── cli.ts                # Commander.js CLI
+├── db/
+│   ├── client.ts         # Drizzle client instance
+│   ├── schema.ts         # Database schema (single source of truth)
+│   └── migrations/       # SQL migrations (generated)
+├── routes/               # tRPC routers
+│   ├── index.ts          # Root router + type exports
+│   ├── trpc.ts           # tRPC instance and procedures
+│   ├── products.ts
+│   ├── manufacturers.ts
+│   ├── categories.ts
+│   ├── hubs.ts
+│   ├── imports.ts
+│   └── compatibility.ts
+├── jobs/
+│   ├── queues.ts         # BullMQ queue definitions
+│   └── scheduler.ts      # Job scheduling (cron)
+├── importers/            # Data source importers
+│   ├── types.ts
+│   ├── zigbee2mqtt.ts
+│   ├── blakadder.ts
+│   └── zwave-js.ts
+├── lib/
+│   ├── redis.ts          # Redis client
+│   ├── auth.ts           # Session authentication
+│   ├── logger.ts         # Pino logger
+│   └── errors.ts         # Error handling utilities
+└── shared/               # Shared schemas and types
+    ├── schemas/          # Zod schemas (validation source of truth)
+    │   ├── product.ts
+    │   ├── manufacturer.ts
+    │   ├── category.ts
+    │   ├── hub.ts
+    │   ├── import.ts
+    │   ├── compatibility.ts
+    │   └── index.ts
+    ├── types.ts          # TypeScript types (inferred from Zod)
+    └── constants.ts      # Enums, protocol definitions, etc.
+
+admin/                    # React SPA (separate build)
+├── src/
+│   ├── main.tsx
+│   ├── App.tsx
+│   ├── lib/
+│   │   ├── trpc.ts       # tRPC client configuration
+│   │   └── utils.ts
+│   ├── components/
+│   │   ├── ui/           # shadcn/ui components
+│   │   └── layout/
+│   └── pages/            # Route components
+│       ├── products/
+│       ├── manufacturers/
+│       ├── hubs/
+│       ├── categories/
+│       └── imports/
+└── package.json          # Admin-specific dependencies
+
+data/
+├── sources/              # Pre-extracted external data (JSON)
+│   ├── zigbee2mqtt.json
+│   ├── blakadder.json
+│   └── zwave-js.json
+└── exports/              # Generated JSON for public frontend
+    ├── products.json
+    └── ...
+```
+
+### Data Flow
+
+1. **Import:** External data sources → `data/sources/` → `rawImports` table (via BullMQ jobs)
+2. **Process:** `rawImports` → transformed → `products` table with related tables (via BullMQ jobs)
+3. **Export:** Database → `data/exports/` JSON files → served at `/api/exports/*`
+4. **Frontend Consumption:** Astro build fetches JSON from CMS → generates static pages → deploys to Cloudflare Pages
+
+### Key Patterns
+
+**Database Schema:** The database schema in `src/db/schema.ts` is the single source of truth for data structure. It uses Drizzle ORM with:
+- Enums for constrained values (protocols, statuses)
+- JSONB columns for flexible protocol-specific data
+- Relational design with foreign keys
+- Indexes on commonly queried fields
+
+**Validation with Zod:** All API inputs/outputs are validated using Zod schemas in `src/shared/schemas/`. These schemas:
+- Define validation rules
+- Generate TypeScript types via `z.infer<>`
+- Are shared between backend tRPC routes and frontend via type imports
+- Should be updated alongside database schema changes
+
+**tRPC Type Safety:** The admin UI gets full type safety through tRPC:
+- `src/routes/index.ts` exports `AppRouter` type
+- Admin UI imports this type in `admin/src/lib/trpc.ts`
+- No manual type syncing required - changes propagate automatically
+- Use `publicProcedure` for endpoints, `input()` for validation
+
+**Import System:** External data flows through a two-step process:
+1. **Import job:** Fetches raw data → stores in `rawImports` table with source tracking
+2. **Process job:** Transforms raw data → creates/updates `products` and related records
+This allows source data to be preserved while managing deduplication and conflicts.
+
+**Background Jobs:** BullMQ handles asynchronous processing:
+- `importQueue` - fetch external data sources
+- `processQueue` - transform raw imports into products
+- `exportQueue` - generate JSON exports
+- Jobs can be scheduled (cron) or triggered manually via CLI/admin UI
+
+## Environment Variables
+
+Required variables (see `.env.example`):
+
+```bash
+DATABASE_URL=postgresql://smartpicker:development@localhost:5432/smartpicker
+REDIS_URL=redis://localhost:6379
+NODE_ENV=development
+ADMIN_PASSWORD_HASH=...  # Hashed admin password for authentication
+CLOUDFLARE_DEPLOY_HOOK=  # Optional webhook to trigger frontend rebuild
+```
+
+## Database Schema Highlights
+
+**Core Tables:**
+- `products` - Smart home devices (with slug, protocol, features)
+- `manufacturers` - Device manufacturers
+- `categories` - Hierarchical product categories (e.g., "Sensors" → "Motion Sensors")
+- `hubs` - Smart home hubs (Home Assistant, SmartThings, etc.)
+- `device_compatibility` - Many-to-many: which products work with which hubs
+- `raw_imports` - Raw data from external sources (preserved for auditing)
+
+**Protocol-Specific Tables:**
+- `zigbee_details` - Zigbee-specific metadata (model ID, endpoints, exposes)
+- `zwave_details` - Z-Wave-specific metadata (manufacturer ID, frequency)
+
+**Future Tables:**
+- `retailers` + `product_prices` - For affiliate links and price tracking
+
+**Important Notes:**
+- Products have a `primarySourceId` linking to the authoritative raw import
+- `manualOverrides` JSONB field allows admins to override imported data
+- Status field controls publication (`draft` → `published` → `archived`)
+- Slugs are used for URL-friendly identifiers (auto-generated from names)
+
+## Working with This Codebase
+
+### Adding a New tRPC Route
+
+1. Create schema in `src/shared/schemas/`
+2. Define router in `src/routes/your-feature.ts` using schemas for validation
+3. Add to `appRouter` in `src/routes/index.ts`
+4. Types automatically available in admin UI via tRPC client
+
+### Adding a New Database Table
+
+1. Define table in `src/db/schema.ts` with proper indexes
+2. Run `pnpm db:generate` to create migration
+3. Apply with `pnpm db:push` or `pnpm db:migrate`
+4. Add Zod schema in `src/shared/schemas/`
+5. Create tRPC router for CRUD operations
+
+### Adding a New Importer
+
+1. Create importer in `src/importers/your-source.ts` implementing `Importer` interface
+2. Add source-specific transformation logic
+3. Register in job queue handlers in `src/jobs/queues.ts`
+4. Add CLI command in `src/cli.ts` if needed
+
+### Admin UI Development
+
+The admin UI is a separate Vite build that:
+- Uses tRPC client for API calls (configured in `admin/src/lib/trpc.ts`)
+- Gets full type safety via `AppRouter` type import
+- Uses shadcn/ui components for consistent UI
+- Uses TanStack Query for caching and state management
+- Uses React Hook Form + Zod for form validation
+
+When developing admin UI:
+1. Ensure backend is running (`pnpm dev`)
+2. Start admin dev server (`cd admin && pnpm dev`)
+3. Admin UI proxies API requests to backend (configured in Vite)
+4. Changes to backend types are immediately reflected in admin (via tRPC)
+
+### Path Aliases
+
+TypeScript path alias `@/*` maps to `./src/*` for cleaner imports:
+```typescript
+import { db } from '@/db/client'
+import { products } from '@/db/schema'
+```
+
+## Testing Strategy
+
+Currently no testing framework configured. When adding tests:
+- Consider Vitest for unit/integration tests (matches Vite ecosystem)
+- Test tRPC routes with mocked database
+- Test importers with fixture data
+- E2E tests for admin UI could use Playwright
+
+## Deployment Notes
+
+**Production Build:**
+- Backend: `tsup` bundles to `dist/` (ESM format)
+- Admin: Vite bundles to `admin/dist/` (static files)
+- Both served by single Hono server in production
+
+**Process Management:**
+- Run two processes: `node dist/index.js` (API server) and `node dist/worker.js` (background jobs)
+- Use process manager (PM2, systemd) to keep both running
+
+**Deployment Target:**
+- Designed for Hetzner VPS (€8-12/month)
+- Uses Docker Compose for PostgreSQL + Redis
+- Caddy for reverse proxy and HTTPS
+
+## Common Patterns
+
+**Slugification:** Product/manufacturer/category slugs are auto-generated using the `slugify` package. Ensure slugs are unique before insertion.
+
+**JSONB Usage:** Protocol-specific data uses JSONB for flexibility. Query with Drizzle's JSONB operators when filtering by nested properties.
+
+**Error Handling:** Use custom error classes from `src/lib/errors.ts` for consistent error responses in tRPC routes.
+
+**Logging:** Use Pino logger from `src/lib/logger.ts` for structured logging. Logs are formatted with `pino-pretty` in development.
+
+**Import Checksums:** Raw imports store checksums to detect when source data hasn't changed, avoiding redundant processing.
