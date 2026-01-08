@@ -51,6 +51,9 @@ pnpm db:migrate
 # Push schema changes directly (dev only)
 pnpm db:push
 
+# Seed database with initial data (manufacturers, categories, hubs)
+pnpm db:seed
+
 # Open Drizzle Studio (visual DB browser)
 pnpm db:studio
 ```
@@ -253,6 +256,24 @@ CLOUDFLARE_DEPLOY_HOOK=  # Optional webhook to trigger frontend rebuild
 - `manualOverrides` JSONB field allows admins to override imported data
 - Status field controls publication (`draft` → `published` → `archived`)
 - Slugs are used for URL-friendly identifiers (auto-generated from names)
+
+## Database Seeding
+
+The `pnpm db:seed` command (`scripts/seed-db.ts`) populates the database with initial reference data:
+
+**36 Manufacturers:** Aqara, Philips Hue, IKEA, Sonoff, Tuya, Shelly, Samsung SmartThings, Home Assistant, Hubitat, and more.
+
+**47 Categories (Hierarchical):**
+- Top-level: Sensors, Lighting, Climate, Security, Actuators, Window Coverings, Energy Management, Buttons & Remotes, Other
+- Children: Motion, Door/Window, Temperature, Bulbs, Switches, Thermostats, Cameras, Locks, etc.
+
+**11 Hubs:**
+- Home Assistant variants (Generic, Yellow, Green)
+- SmartThings (Hub v3, Station)
+- Hubitat Elevation, Homey Pro
+- Consumer hubs: Echo, Nest Hub, HomePod mini
+
+The seeder uses `onConflictDoUpdate` so it can be run multiple times safely (upsert behavior). Slugs are automatically generated using `slugify` with `{ lower: true, strict: true }` options.
 
 ## Working with This Codebase
 

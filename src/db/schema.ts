@@ -259,3 +259,18 @@ export const zwaveDetailsRelations = relations(zwaveDetails, ({ one }) => ({
     references: [products.id],
   }),
 }))
+
+export const retailersRelations = relations(retailers, ({ many }) => ({
+  productPrices: many(productPrices),
+}))
+
+export const productPricesRelations = relations(productPrices, ({ one }) => ({
+  product: one(products, {
+    fields: [productPrices.productId],
+    references: [products.id],
+  }),
+  retailer: one(retailers, {
+    fields: [productPrices.retailerId],
+    references: [retailers.id],
+  }),
+}))
