@@ -82,6 +82,12 @@ pnpm start:worker
 ```bash
 # Extract Zigbee2MQTT device data (installs package temporarily, extracts, cleans up)
 pnpm extract:z2m
+
+# Extract Blakadder Zigbee device data (clones repo, parses markdown files, cleans up)
+pnpm extract:blakadder
+
+# Extract Z-Wave JS device data with template resolution (clones repo, extracts & resolves inline)
+pnpm extract:zwave
 ```
 
 ### CLI Commands

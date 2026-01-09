@@ -9,11 +9,16 @@ export const zwaveJsImporter: Importer = {
     const parsed = JSON.parse(data)
     const devices = Array.isArray(parsed) ? parsed : parsed.devices || []
 
+    // Extract metadata if available from the extraction script
+    const extractedAt = parsed.metadata?.extractedAt
+      ? new Date(parsed.metadata.extractedAt)
+      : new Date()
+
     return {
       source: 'zwave-js',
       devices,
       metadata: {
-        fetchedAt: new Date(),
+        fetchedAt: extractedAt,
         count: devices.length,
       },
     }
