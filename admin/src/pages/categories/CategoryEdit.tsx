@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { CategoryForm } from '@/components/categories/CategoryForm';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function CategoryEdit() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +16,11 @@ export function CategoryEdit() {
   const updateMutation = trpc.categories.update.useMutation({
     onSuccess: () => {
       utils.categories.list.invalidate();
+      toast.success('Category updated successfully');
       navigate('/categories');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update category: ${error.message}`);
     },
   });
 

@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { ManufacturerForm } from '@/components/manufacturers/ManufacturerForm';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function ManufacturerCreate() {
   const navigate = useNavigate();
@@ -10,7 +11,11 @@ export function ManufacturerCreate() {
   const createMutation = trpc.manufacturers.create.useMutation({
     onSuccess: () => {
       utils.manufacturers.list.invalidate();
+      toast.success('Manufacturer created successfully');
       navigate('/manufacturers');
+    },
+    onError: (error) => {
+      toast.error(`Failed to create manufacturer: ${error.message}`);
     },
   });
 

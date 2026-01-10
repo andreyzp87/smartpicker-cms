@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { ProductForm } from '@/components/products/ProductForm';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function ProductEdit() {
   const { id } = useParams<{ id: string }>();
@@ -15,7 +16,11 @@ export function ProductEdit() {
   const updateMutation = trpc.products.update.useMutation({
     onSuccess: () => {
       utils.products.list.invalidate();
+      toast.success('Product updated successfully');
       navigate('/products');
+    },
+    onError: (error) => {
+      toast.error(`Failed to update product: ${error.message}`);
     },
   });
 

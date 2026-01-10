@@ -3,6 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { CategoriesTable } from '@/components/categories/CategoriesTable';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 
 export function CategoriesList() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function CategoriesList() {
       </div>
 
       {isLoading ? (
-        <div>Loading...</div>
+        <TableSkeleton rows={10} />
       ) : (
         <CategoriesTable categories={data ?? []} />
       )}

@@ -3,6 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { HubsTable } from '@/components/hubs/HubsTable';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 
 export function HubsList() {
   const navigate = useNavigate();
@@ -19,7 +20,7 @@ export function HubsList() {
       </div>
 
       {isLoading ? (
-        <div>Loading...</div>
+        <TableSkeleton rows={10} />
       ) : (
         <HubsTable hubs={data ?? []} />
       )}

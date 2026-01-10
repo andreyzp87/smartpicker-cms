@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { ProductForm } from '@/components/products/ProductForm';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function ProductCreate() {
   const navigate = useNavigate();
@@ -10,7 +11,11 @@ export function ProductCreate() {
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
       utils.products.list.invalidate();
+      toast.success('Product created successfully');
       navigate('/products');
+    },
+    onError: (error) => {
+      toast.error(`Failed to create product: ${error.message}`);
     },
   });
 

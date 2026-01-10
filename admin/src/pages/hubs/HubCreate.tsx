@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { HubForm } from '@/components/hubs/HubForm';
 import { Card } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export function HubCreate() {
   const navigate = useNavigate();
@@ -10,7 +11,11 @@ export function HubCreate() {
   const createMutation = trpc.hubs.create.useMutation({
     onSuccess: () => {
       utils.hubs.list.invalidate();
+      toast.success('Hub created successfully');
       navigate('/hubs');
+    },
+    onError: (error) => {
+      toast.error(`Failed to create hub: ${error.message}`);
     },
   });
 

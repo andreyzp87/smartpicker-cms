@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 
 type RawImport = {
   id: number;
@@ -74,7 +75,7 @@ export function ImportsList() {
       </div>
 
       {isLoading ? (
-        <div>Loading...</div>
+        <TableSkeleton rows={10} />
       ) : (
         <DataTable<RawImport, unknown> columns={columns} data={(data?.items ?? []) as RawImport[]} />
       )}

@@ -3,6 +3,7 @@ import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { ProductsTable } from '@/components/products/ProductsTable';
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
 
 type Product = {
   id: number;
@@ -35,7 +36,7 @@ export function ProductsList() {
       </div>
 
       {isLoading ? (
-        <div>Loading...</div>
+        <TableSkeleton rows={10} />
       ) : (
         <ProductsTable products={(data?.items ?? []) as Product[]} />
       )}
