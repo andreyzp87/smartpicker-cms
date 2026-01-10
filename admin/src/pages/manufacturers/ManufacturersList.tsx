@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { columns } from '@/components/manufacturers/ManufacturersTable';
-import { DataTable } from '@/components/ui/data-table';
+import { ManufacturersTable } from '@/components/manufacturers/ManufacturersTable';
 
 export function ManufacturersList() {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ export function ManufacturersList() {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <DataTable columns={columns} data={data ?? []} />
+        <ManufacturersTable manufacturers={data ?? []} />
       )}
     </div>
   );

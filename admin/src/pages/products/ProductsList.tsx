@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { columns } from '@/components/products/ProductsTable';
-import { DataTable } from '@/components/ui/data-table';
+import { ProductsTable } from '@/components/products/ProductsTable';
 
 type Product = {
   id: number;
@@ -38,7 +37,7 @@ export function ProductsList() {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <DataTable<Product, unknown> columns={columns} data={(data?.items ?? []) as Product[]} />
+        <ProductsTable products={(data?.items ?? []) as Product[]} />
       )}
     </div>
   );

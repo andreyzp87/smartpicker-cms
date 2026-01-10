@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { columns } from '@/components/hubs/HubsTable';
-import { DataTable } from '@/components/ui/data-table';
+import { HubsTable } from '@/components/hubs/HubsTable';
 
 export function HubsList() {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ export function HubsList() {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <DataTable columns={columns} data={data ?? []} />
+        <HubsTable hubs={data ?? []} />
       )}
     </div>
   );

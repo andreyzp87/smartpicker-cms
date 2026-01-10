@@ -2,8 +2,7 @@ import { useNavigate } from 'react-router';
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
-import { columns } from '@/components/categories/CategoriesTable';
-import { DataTable } from '@/components/ui/data-table';
+import { CategoriesTable } from '@/components/categories/CategoriesTable';
 
 export function CategoriesList() {
   const navigate = useNavigate();
@@ -22,7 +21,7 @@ export function CategoriesList() {
       {isLoading ? (
         <div>Loading...</div>
       ) : (
-        <DataTable columns={columns} data={data ?? []} />
+        <CategoriesTable categories={data ?? []} />
       )}
     </div>
   );
