@@ -13,6 +13,7 @@ import { CategoryEdit } from './pages/categories/CategoryEdit';
 import { HubsList } from './pages/hubs/HubsList';
 import { HubCreate } from './pages/hubs/HubCreate';
 import { HubEdit } from './pages/hubs/HubEdit';
+import { ImportsList } from './pages/imports/ImportsList';
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
           <Route path="hubs" element={<HubsList />} />
           <Route path="hubs/new" element={<HubCreate />} />
           <Route path="hubs/:id/edit" element={<HubEdit />} />
+          <Route path="imports" element={<ImportsList />} />
         </Route>
       </Routes>
     </BrowserRouter>
