@@ -14,6 +14,7 @@ import { HubsList } from './pages/hubs/HubsList';
 import { HubCreate } from './pages/hubs/HubCreate';
 import { HubEdit } from './pages/hubs/HubEdit';
 import { ImportsList } from './pages/imports/ImportsList';
+import { Toaster } from 'sonner';
 
 function App() {
   return (
@@ -36,6 +37,7 @@ function App() {
           <Route path="imports" element={<ImportsList />} />
         </Route>
       </Routes>
+      <Toaster position="top-right" />
     </BrowserRouter>
   );
 }

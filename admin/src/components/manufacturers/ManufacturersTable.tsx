@@ -11,6 +11,7 @@ import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
 import { trpc } from '@/lib/trpc';
 import { DataTable } from '@/components/ui/data-table';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 type Manufacturer = {
   id: number;
@@ -31,6 +32,10 @@ export function ManufacturersTable({ manufacturers }: ManufacturersTableProps) {
   const deleteMutation = trpc.manufacturers.delete.useMutation({
     onSuccess: () => {
       utils.manufacturers.list.invalidate();
+      toast.success('Manufacturer deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete manufacturer: ${error.message}`);
     },
   });
 

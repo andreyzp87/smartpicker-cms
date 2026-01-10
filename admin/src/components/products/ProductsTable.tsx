@@ -13,6 +13,7 @@ import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
 import { trpc } from '@/lib/trpc';
 import { DataTable } from '@/components/ui/data-table';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 type Product = {
   id: number;
@@ -37,6 +38,10 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const deleteMutation = trpc.products.delete.useMutation({
     onSuccess: () => {
       utils.products.list.invalidate();
+      toast.success('Product deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete product: ${error.message}`);
     },
   });
 

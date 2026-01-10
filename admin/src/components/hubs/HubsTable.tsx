@@ -12,6 +12,7 @@ import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
 import { trpc } from '@/lib/trpc';
 import { DataTable } from '@/components/ui/data-table';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 type Hub = {
   id: number;
@@ -36,6 +37,10 @@ export function HubsTable({ hubs }: HubsTableProps) {
   const deleteMutation = trpc.hubs.delete.useMutation({
     onSuccess: () => {
       utils.hubs.list.invalidate();
+      toast.success('Hub deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete hub: ${error.message}`);
     },
   });
 

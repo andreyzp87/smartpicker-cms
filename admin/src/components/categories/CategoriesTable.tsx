@@ -11,6 +11,7 @@ import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
 import { trpc } from '@/lib/trpc';
 import { DataTable } from '@/components/ui/data-table';
 import { useNavigate } from 'react-router';
+import { toast } from 'sonner';
 
 type Category = {
   id: number;
@@ -35,6 +36,10 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
   const deleteMutation = trpc.categories.delete.useMutation({
     onSuccess: () => {
       utils.categories.list.invalidate();
+      toast.success('Category deleted successfully');
+    },
+    onError: (error) => {
+      toast.error(`Failed to delete category: ${error.message}`);
     },
   });
 
