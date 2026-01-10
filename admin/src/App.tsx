@@ -1,12 +1,29 @@
+import { BrowserRouter, Routes, Route } from 'react-router';
+import { AppLayout } from './components/layout/AppLayout';
+import { Dashboard } from './pages/Dashboard';
+import { ProductsList } from './pages/products/ProductsList';
+import { ProductCreate } from './pages/products/ProductCreate';
+import { ProductEdit } from './pages/products/ProductEdit';
+import { ManufacturersList } from './pages/manufacturers/ManufacturersList';
+import { ManufacturerCreate } from './pages/manufacturers/ManufacturerCreate';
+import { ManufacturerEdit } from './pages/manufacturers/ManufacturerEdit';
+
 function App() {
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-      <div className="bg-white p-8 rounded-lg shadow-md">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">SmartPicker Admin</h1>
-        <p className="text-gray-600">CMS for Smart Home Device Compatibility</p>
-      </div>
-    </div>
-  )
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<AppLayout />}>
+          <Route index element={<Dashboard />} />
+          <Route path="products" element={<ProductsList />} />
+          <Route path="products/new" element={<ProductCreate />} />
+          <Route path="products/:id/edit" element={<ProductEdit />} />
+          <Route path="manufacturers" element={<ManufacturersList />} />
+          <Route path="manufacturers/new" element={<ManufacturerCreate />} />
+          <Route path="manufacturers/:id/edit" element={<ManufacturerEdit />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
 }
 
 export default App
