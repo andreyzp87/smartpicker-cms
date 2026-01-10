@@ -7,6 +7,9 @@ import { ProductEdit } from './pages/products/ProductEdit';
 import { ManufacturersList } from './pages/manufacturers/ManufacturersList';
 import { ManufacturerCreate } from './pages/manufacturers/ManufacturerCreate';
 import { ManufacturerEdit } from './pages/manufacturers/ManufacturerEdit';
+import { CategoriesList } from './pages/categories/CategoriesList';
+import { CategoryCreate } from './pages/categories/CategoryCreate';
+import { CategoryEdit } from './pages/categories/CategoryEdit';
 
 function App() {
   return (
@@ -20,6 +23,9 @@ function App() {
           <Route path="manufacturers" element={<ManufacturersList />} />
           <Route path="manufacturers/new" element={<ManufacturerCreate />} />
           <Route path="manufacturers/:id/edit" element={<ManufacturerEdit />} />
+          <Route path="categories" element={<CategoriesList />} />
+          <Route path="categories/new" element={<CategoryCreate />} />
+          <Route path="categories/:id/edit" element={<CategoryEdit />} />
         </Route>
       </Routes>
     </BrowserRouter>
