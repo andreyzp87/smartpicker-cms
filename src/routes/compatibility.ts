@@ -1,38 +1,89 @@
 import { router, publicProcedure } from './trpc'
 import { z } from 'zod'
 import { compatibilityCreateSchema, compatibilityUpdateSchema } from '../shared/schemas'
+import { db } from '../db/client'
+import { deviceCompatibility } from '../db/schema'
+import { eq } from 'drizzle-orm'
 
 export const compatibilityRouter = router({
   byProductId: publicProcedure
-    .input(z.object({ productId: z.number().int().positive() }))
+    .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
-      // TODO: Implement database query
-      return []
+      const items = await db.query.deviceCompatibility.findMany({
+        where: eq(deviceCompatibility.productId, input.productId),
+        with: {
+          hub: {
+            with: {
+              manufacturer: true,
+            },
+          },
+        },
+      })
+
+      return items
     }),
 
   byHubId: publicProcedure
-    .input(z.object({ hubId: z.number().int().positive() }))
+    .input(z.object({ hubId: z.number() }))
     .query(async ({ input }) => {
-      // TODO: Implement database query
-      return []
+      const items = await db.query.deviceCompatibility.findMany({
+        where: eq(deviceCompatibility.hubId, input.hubId),
+        with: {
+          product: {
+            with: {
+              manufacturer: true,
+            },
+          },
+        },
+      })
+
+      return items
     }),
 
-  create: publicProcedure.input(compatibilityCreateSchema).mutation(async ({ input }) => {
-    // TODO: Implement database insert
-    return { id: 1, ...input }
-  }),
+  create: publicProcedure
+    .input(compatibilityCreateSchema)
+    .mutation(async ({ input }) => {
+      const [compatibility] = await db
+        .insert(deviceCompatibility)
+        .values({
+          ...input,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning()
+
+      return compatibility
+    }),
 
   update: publicProcedure
-    .input(z.object({ id: z.number().int().positive(), data: compatibilityUpdateSchema }))
+    .input(
+      z.object({
+        id: z.number(),
+        data: compatibilityUpdateSchema,
+      })
+    )
     .mutation(async ({ input }) => {
-      // TODO: Implement database update
-      return { id: input.id, ...input.data }
+      const [compatibility] = await db
+        .update(deviceCompatibility)
+        .set({
+          ...input.data,
+          updatedAt: new Date(),
+        })
+        .where(eq(deviceCompatibility.id, input.id))
+        .returning()
+
+      if (!compatibility) {
+        throw new Error('Compatibility entry not found')
+      }
+
+      return compatibility
     }),
 
   delete: publicProcedure
-    .input(z.object({ id: z.number().int().positive() }))
+    .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
-      // TODO: Implement database delete
+      await db.delete(deviceCompatibility).where(eq(deviceCompatibility.id, input.id))
+
       return { success: true }
     }),
 })
