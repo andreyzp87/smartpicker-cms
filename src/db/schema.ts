@@ -35,6 +35,8 @@ export const compatibilityStatusEnum = pgEnum('compatibility_status', [
 
 export const zwaveFrequencyEnum = pgEnum('zwave_frequency', ['us', 'eu', 'au', 'jp'])
 
+export const mergeConfidenceEnum = pgEnum('merge_confidence', ['exact', 'high', 'medium', 'low'])
+
 // Tables
 export const manufacturers = pgTable('manufacturers', {
   id: serial('id').primaryKey(),
@@ -63,7 +65,7 @@ export const hubs = pgTable('hubs', {
   description: text('description'),
 })
 
-export const rawImports = pgTable(
+export const rawImports: any = pgTable(
   'raw_imports',
   {
     id: serial('id').primaryKey(),
@@ -71,7 +73,7 @@ export const rawImports = pgTable(
     sourceId: varchar('source_id', { length: 255 }).notNull(),
     data: jsonb('data').notNull(),
     checksum: varchar('checksum', { length: 64 }),
-    productId: integer('product_id').references(() => products.id),
+    productId: integer('product_id').references((): any => products.id),
     importedAt: timestamp('imported_at').defaultNow().notNull(),
     processedAt: timestamp('processed_at'),
   },
@@ -82,7 +84,7 @@ export const rawImports = pgTable(
   }),
 )
 
-export const products = pgTable(
+export const products: any = pgTable(
   'products',
   {
     id: serial('id').primaryKey(),
@@ -98,7 +100,7 @@ export const products = pgTable(
     matterCertified: boolean('matter_certified'),
     imageUrl: text('image_url'),
     description: text('description'),
-    primarySourceId: integer('primary_source_id').references(() => rawImports.id),
+    primarySourceId: integer('primary_source_id').references((): any => rawImports.id),
     manualOverrides: jsonb('manual_overrides').$type<Record<string, boolean>>().default({}),
     status: productStatusEnum('status').default('draft').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),
@@ -109,6 +111,29 @@ export const products = pgTable(
     categoryIdx: index('products_category_idx').on(table.categoryId),
     protocolIdx: index('products_protocol_idx').on(table.primaryProtocol),
     statusIdx: index('products_status_idx').on(table.status),
+  }),
+)
+
+export const productSources = pgTable(
+  'product_sources',
+  {
+    id: serial('id').primaryKey(),
+    productId: integer('product_id')
+      .references(() => products.id, { onDelete: 'cascade' })
+      .notNull(),
+    rawImportId: integer('raw_import_id')
+      .references(() => rawImports.id, { onDelete: 'cascade' })
+      .notNull(),
+    isPrimary: boolean('is_primary').default(false).notNull(),
+    mergeConfidence: mergeConfidenceEnum('merge_confidence').default('exact').notNull(),
+    mergedAt: timestamp('merged_at').defaultNow().notNull(),
+    mergedBy: varchar('merged_by', { length: 50 }).default('auto').notNull(),
+    notes: text('notes'),
+  },
+  (table) => ({
+    productIdx: index('product_sources_product_idx').on(table.productId),
+    rawImportIdx: index('product_sources_raw_import_idx').on(table.rawImportId),
+    uniqueLink: unique('product_sources_unique').on(table.productId, table.rawImportId),
   }),
 )
 
@@ -205,6 +230,7 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.primarySourceId],
     references: [rawImports.id],
   }),
+  sources: many(productSources),
   compatibility: many(deviceCompatibility),
   zigbeeDetails: one(zigbeeDetails, {
     fields: [products.id],
@@ -215,6 +241,17 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     references: [zwaveDetails.productId],
   }),
   prices: many(productPrices),
+}))
+
+export const productSourcesRelations = relations(productSources, ({ one }) => ({
+  product: one(products, {
+    fields: [productSources.productId],
+    references: [products.id],
+  }),
+  rawImport: one(rawImports, {
+    fields: [productSources.rawImportId],
+    references: [rawImports.id],
+  }),
 }))
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
