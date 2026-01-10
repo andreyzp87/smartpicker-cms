@@ -10,6 +10,9 @@ import { ManufacturerEdit } from './pages/manufacturers/ManufacturerEdit';
 import { CategoriesList } from './pages/categories/CategoriesList';
 import { CategoryCreate } from './pages/categories/CategoryCreate';
 import { CategoryEdit } from './pages/categories/CategoryEdit';
+import { HubsList } from './pages/hubs/HubsList';
+import { HubCreate } from './pages/hubs/HubCreate';
+import { HubEdit } from './pages/hubs/HubEdit';
 
 function App() {
   return (
@@ -26,6 +29,9 @@ function App() {
           <Route path="categories" element={<CategoriesList />} />
           <Route path="categories/new" element={<CategoryCreate />} />
           <Route path="categories/:id/edit" element={<CategoryEdit />} />
+          <Route path="hubs" element={<HubsList />} />
+          <Route path="hubs/new" element={<HubCreate />} />
+          <Route path="hubs/:id/edit" element={<HubEdit />} />
         </Route>
       </Routes>
     </BrowserRouter>
