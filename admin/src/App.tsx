@@ -1,4 +1,7 @@
+import { useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { trpc, trpcClient } from './lib/trpc';
 import { AppLayout } from './components/layout/AppLayout';
 import { Dashboard } from './pages/Dashboard';
 import { ProductsList } from './pages/products/ProductsList';
@@ -14,31 +17,46 @@ import { HubsList } from './pages/hubs/HubsList';
 import { HubCreate } from './pages/hubs/HubCreate';
 import { HubEdit } from './pages/hubs/HubEdit';
 import { ImportsList } from './pages/imports/ImportsList';
+import { Settings } from './pages/Settings';
 import { Toaster } from 'sonner';
 
 function App() {
+  const [queryClient] = useState(() => new QueryClient({
+    defaultOptions: {
+      queries: {
+        staleTime: 5000,
+        retry: 1,
+      },
+    },
+  }));
+
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<AppLayout />}>
-          <Route index element={<Dashboard />} />
-          <Route path="products" element={<ProductsList />} />
-          <Route path="products/new" element={<ProductCreate />} />
-          <Route path="products/:id/edit" element={<ProductEdit />} />
-          <Route path="manufacturers" element={<ManufacturersList />} />
-          <Route path="manufacturers/new" element={<ManufacturerCreate />} />
-          <Route path="manufacturers/:id/edit" element={<ManufacturerEdit />} />
-          <Route path="categories" element={<CategoriesList />} />
-          <Route path="categories/new" element={<CategoryCreate />} />
-          <Route path="categories/:id/edit" element={<CategoryEdit />} />
-          <Route path="hubs" element={<HubsList />} />
-          <Route path="hubs/new" element={<HubCreate />} />
-          <Route path="hubs/:id/edit" element={<HubEdit />} />
-          <Route path="imports" element={<ImportsList />} />
-        </Route>
-      </Routes>
-      <Toaster position="top-right" />
-    </BrowserRouter>
+    <trpc.Provider client={trpcClient} queryClient={queryClient}>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter basename="/admin">
+          <Routes>
+            <Route path="/" element={<AppLayout />}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<ProductsList />} />
+              <Route path="products/new" element={<ProductCreate />} />
+              <Route path="products/:id/edit" element={<ProductEdit />} />
+              <Route path="manufacturers" element={<ManufacturersList />} />
+              <Route path="manufacturers/new" element={<ManufacturerCreate />} />
+              <Route path="manufacturers/:id/edit" element={<ManufacturerEdit />} />
+              <Route path="categories" element={<CategoriesList />} />
+              <Route path="categories/new" element={<CategoryCreate />} />
+              <Route path="categories/:id/edit" element={<CategoryEdit />} />
+              <Route path="hubs" element={<HubsList />} />
+              <Route path="hubs/new" element={<HubCreate />} />
+              <Route path="hubs/:id/edit" element={<HubEdit />} />
+              <Route path="imports" element={<ImportsList />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+          <Toaster position="top-right" />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </trpc.Provider>
   );
 }
 
