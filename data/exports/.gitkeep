@@ -15,5 +15,5 @@ These files are NOT committed to git as they are:
 3. Consumed by the smartpicker-web (Astro) frontend at build time
 
 To generate exports, run:
-- `pnpm cli export` (when implemented)
+- `pnpm cli export`
 - Or trigger via admin UI export button

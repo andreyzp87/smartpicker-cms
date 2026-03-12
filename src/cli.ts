@@ -1,9 +1,9 @@
 import { Command } from 'commander'
-import { db } from './db/client'
 import { getImporter } from './importers'
 import { storeRawImports } from './importers/service'
 import { transformAllUnprocessed, backfillCompatibility } from './processors'
 import { deduplicateProducts, getDuplicateStats } from './deduplication'
+import { exportService } from './services/export.service'
 
 const program = new Command()
 
@@ -134,6 +134,86 @@ program
       process.exit(0)
     } catch (error) {
       console.error('❌ Deduplication failed:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('export')
+  .description('Generate JSON exports for public frontend')
+  .option(
+    '-t, --type <type>',
+    'Export type (products, manufacturers, categories, hubs, protocols, all)',
+    'all'
+  )
+  .action(async (options: { type: string }) => {
+    try {
+      console.log(`📦 Starting export generation (${options.type})...\n`)
+
+      switch (options.type) {
+        case 'products': {
+          const result = await exportService.generateProductsExport()
+          console.log(`✅ Products export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'manufacturers': {
+          const result = await exportService.generateManufacturersExport()
+          console.log(`✅ Manufacturers export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'categories': {
+          const result = await exportService.generateCategoriesExport()
+          console.log(`✅ Categories export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'hubs': {
+          const result = await exportService.generateHubsExport()
+          console.log(`✅ Hubs export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'protocols': {
+          const result = await exportService.generateProtocolsExport()
+          console.log(`✅ Protocols export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'all': {
+          const result = await exportService.generateAllExports()
+          console.log(`✅ All exports complete!`)
+          console.log(`   Products: ${result.products.count}`)
+          console.log(`   Manufacturers: ${result.manufacturers.count}`)
+          console.log(`   Categories: ${result.categories.count}`)
+          console.log(`   Hubs: ${result.hubs.count}`)
+          console.log(`   Protocols: ${result.protocols.count}`)
+          console.log(`   Site metadata: ${result.site.count}`)
+          console.log(`   Sitemap URLs: ${result.sitemap.count}`)
+          break
+        }
+
+        default:
+          console.error(`❌ Unknown export type: ${options.type}`)
+          console.error(`   Valid types: products, manufacturers, categories, hubs, protocols, all`)
+          process.exit(1)
+      }
+
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Export failed:')
       console.error(error)
       process.exit(1)
     }
