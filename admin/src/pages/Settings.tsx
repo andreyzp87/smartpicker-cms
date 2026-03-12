@@ -8,7 +8,7 @@ export function Settings() {
   const generateAllMutation = trpc.exports.generateAll.useMutation({
     onSuccess: (data) => {
       toast.success('All exports generated successfully', {
-        description: `Products: ${data.exports.products.count}, Manufacturers: ${data.exports.manufacturers.count}, Categories: ${data.exports.categories.count}, Hubs: ${data.exports.hubs.count}`,
+        description: `Products: ${data.exports.products.count}, Manufacturers: ${data.exports.manufacturers.count}, Categories: ${data.exports.categories.count}, Hubs: ${data.exports.hubs.count}, Protocols: ${data.exports.protocols.count}`,
       });
     },
     onError: (error) => {
@@ -52,12 +52,22 @@ export function Settings() {
     },
   });
 
+  const generateProtocolsMutation = trpc.exports.generateProtocols.useMutation({
+    onSuccess: (data) => {
+      toast.success(data.message);
+    },
+    onError: (error) => {
+      toast.error(`Export failed: ${error.message}`);
+    },
+  });
+
   const isAnyMutationLoading =
     generateAllMutation.isPending ||
     generateProductsMutation.isPending ||
     generateManufacturersMutation.isPending ||
     generateCategoriesMutation.isPending ||
-    generateHubsMutation.isPending;
+    generateHubsMutation.isPending ||
+    generateProtocolsMutation.isPending;
 
   return (
     <div className="space-y-6">
@@ -83,7 +93,7 @@ export function Settings() {
             <div>
               <h3 className="font-semibold">Generate All Exports</h3>
               <p className="text-sm text-gray-600">
-                Products, manufacturers, categories, and hubs
+                Products, manufacturers, categories, hubs, protocols, site metadata, and sitemap
               </p>
             </div>
             <Button
@@ -176,6 +186,25 @@ export function Settings() {
                 disabled={isAnyMutationLoading}
               >
                 {generateHubsMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  'Export'
+                )}
+              </Button>
+            </div>
+
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+              <div>
+                <h4 className="font-medium">Protocols</h4>
+                <p className="text-sm text-gray-600">Protocol landing pages and counts</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => generateProtocolsMutation.mutate()}
+                disabled={isAnyMutationLoading}
+              >
+                {generateProtocolsMutation.isPending ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   'Export'
