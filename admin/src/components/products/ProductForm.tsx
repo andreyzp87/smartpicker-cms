@@ -1,6 +1,6 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { productCreateSchema, type ProductCreate } from '@/shared/schemas';
+import { productCreateSchema, type ProductCreate, type ProductStatus } from '@/shared/schemas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { trpc } from '@/lib/trpc';
 import { PROTOCOLS } from '@/shared/constants';
+import { Circle } from 'lucide-react';
 
 interface ProductFormProps {
   initialData?: Partial<ProductCreate>;
@@ -37,10 +38,12 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
       cloudDependent: false,
       requiresHub: false,
       matterCertified: false,
+      status: 'draft',
     },
   });
 
   const protocol = watch('primaryProtocol');
+  const status = watch('status');
 
   return (
     <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
@@ -165,6 +168,44 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
           {...register('description')}
           className="w-full min-h-[100px] px-3 py-2 border rounded-md"
         />
+      </div>
+
+      <div>
+        <Label htmlFor="status">Status</Label>
+        <Select
+          value={status ?? 'draft'}
+          onValueChange={(value) => setValue('status', value as ProductStatus)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="draft">
+              <div className="flex items-center gap-2">
+                <Circle className="h-3 w-3 fill-gray-400 text-gray-400" />
+                <span>Draft</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="published">
+              <div className="flex items-center gap-2">
+                <Circle className="h-3 w-3 fill-green-500 text-green-500" />
+                <span>Published</span>
+              </div>
+            </SelectItem>
+            <SelectItem value="archived">
+              <div className="flex items-center gap-2">
+                <Circle className="h-3 w-3 fill-red-500 text-red-500" />
+                <span>Archived</span>
+              </div>
+            </SelectItem>
+          </SelectContent>
+        </Select>
+        {errors.status && (
+          <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>
+        )}
+        <p className="text-sm text-gray-600 mt-1">
+          Only published products appear in the public database
+        </p>
       </div>
 
       <Button type="submit" disabled={isLoading}>

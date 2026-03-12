@@ -5,7 +5,8 @@ import {
   FolderTree,
   Radio,
   Download,
-  LayoutDashboard
+  LayoutDashboard,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +17,7 @@ const navigation = [
   { name: 'Categories', href: '/categories', icon: FolderTree },
   { name: 'Hubs', href: '/hubs', icon: Radio },
   { name: 'Imports', href: '/imports', icon: Download },
+  { name: 'Settings', href: '/settings', icon: SettingsIcon },
 ];
 
 export function Sidebar() {
