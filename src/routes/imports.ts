@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { z } from 'zod'
 import { importSourceSchema } from '../shared/schemas'
 import { db } from '../db/client'
@@ -6,7 +6,7 @@ import { rawImports } from '../db/schema'
 import { eq, and, desc, isNull, isNotNull, count } from 'drizzle-orm'
 
 export const importsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(
       z.object({
         source: importSourceSchema.optional(),
@@ -54,7 +54,7 @@ export const importsRouter = router({
       }
     }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const rawImport = await db.query.rawImports.findFirst({
@@ -64,7 +64,7 @@ export const importsRouter = router({
       return rawImport ?? null
     }),
 
-  trigger: publicProcedure
+  trigger: protectedProcedure
     .input(z.object({ source: importSourceSchema }))
     .mutation(async ({ input }) => {
       // TODO: Queue import job

@@ -13,14 +13,16 @@ const app = new Hono()
 // Middleware
 app.use('*', honoLogger())
 
-// CORS configuration for admin UI
-app.use(
-  '/api/*',
-  cors({
-    origin: process.env.NODE_ENV === 'development' ? 'http://localhost:5173' : '*',
-    credentials: true,
-  })
-)
+// The Vite dev server runs on a different origin; production admin is same-origin.
+if (process.env.NODE_ENV === 'development') {
+  app.use(
+    '/api/*',
+    cors({
+      origin: 'http://localhost:5173',
+      credentials: true,
+    }),
+  )
+}
 
 // tRPC API routes
 app.use(

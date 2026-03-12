@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { z } from 'zod'
 import { hubCreateSchema, hubUpdateSchema } from '../shared/schemas'
 import { db } from '../db/client'
@@ -6,7 +6,7 @@ import { hubs } from '../db/schema'
 import { eq, asc } from 'drizzle-orm'
 
 export const hubsRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const items = await db.query.hubs.findMany({
       orderBy: asc(hubs.name),
       with: {
@@ -17,7 +17,7 @@ export const hubsRouter = router({
     return items
   }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const hub = await db.query.hubs.findFirst({
@@ -30,7 +30,7 @@ export const hubsRouter = router({
       return hub ?? null
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(hubCreateSchema)
     .mutation(async ({ input }) => {
       const [hub] = await db
@@ -41,7 +41,7 @@ export const hubsRouter = router({
       return hub
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -62,7 +62,7 @@ export const hubsRouter = router({
       return hub
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.delete(hubs).where(eq(hubs.id, input.id))

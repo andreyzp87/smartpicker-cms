@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { z } from 'zod'
 import { compatibilityCreateSchema, compatibilityUpdateSchema } from '../shared/schemas'
 import { db } from '../db/client'
@@ -6,7 +6,7 @@ import { deviceCompatibility } from '../db/schema'
 import { eq } from 'drizzle-orm'
 
 export const compatibilityRouter = router({
-  byProductId: publicProcedure
+  byProductId: protectedProcedure
     .input(z.object({ productId: z.number() }))
     .query(async ({ input }) => {
       const items = await db.query.deviceCompatibility.findMany({
@@ -23,7 +23,7 @@ export const compatibilityRouter = router({
       return items
     }),
 
-  byHubId: publicProcedure
+  byHubId: protectedProcedure
     .input(z.object({ hubId: z.number() }))
     .query(async ({ input }) => {
       const items = await db.query.deviceCompatibility.findMany({
@@ -40,7 +40,7 @@ export const compatibilityRouter = router({
       return items
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(compatibilityCreateSchema)
     .mutation(async ({ input }) => {
       const [compatibility] = await db
@@ -55,7 +55,7 @@ export const compatibilityRouter = router({
       return compatibility
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -79,7 +79,7 @@ export const compatibilityRouter = router({
       return compatibility
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.delete(deviceCompatibility).where(eq(deviceCompatibility.id, input.id))

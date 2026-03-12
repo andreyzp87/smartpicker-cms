@@ -15,6 +15,13 @@
       "when": 1767954796626,
       "tag": "0001_clear_talos",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1773355200000,
+      "tag": "0002_auth",
+      "breakpoints": true
     }
   ]
 }

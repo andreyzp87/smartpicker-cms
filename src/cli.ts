@@ -4,10 +4,31 @@ import { storeRawImports } from './importers/service'
 import { transformAllUnprocessed, backfillCompatibility } from './processors'
 import { deduplicateProducts, getDuplicateStats } from './deduplication'
 import { exportService } from './services/export.service'
+import { db } from './db/client'
+import { users } from './db/schema'
+import {
+  authEmailSchema,
+  authPasswordSchema,
+  authNameSchema,
+  formatZodError,
+  hashPassword,
+  normalizeEmail,
+} from './lib/auth'
+import { eq } from 'drizzle-orm'
+import { ZodError } from 'zod'
 
 const program = new Command()
 
 program.name('smartpicker-cli').description('CLI for SmartPicker CMS').version('0.1.0')
+
+function handleCliValidationError(error: unknown): never {
+  if (error instanceof ZodError) {
+    console.error(`❌ Invalid input: ${formatZodError(error)}`)
+    process.exit(1)
+  }
+
+  throw error
+}
 
 program
   .command('import')
@@ -134,6 +155,100 @@ program
       process.exit(0)
     } catch (error) {
       console.error('❌ Deduplication failed:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('users:create')
+  .description('Create an admin user for CMS login')
+  .requiredOption('--email <email>', 'User email address')
+  .requiredOption('--name <name>', 'Display name')
+  .requiredOption('--password <password>', 'User password')
+  .action(async (options: { email: string; name: string; password: string }) => {
+    try {
+      const email = authEmailSchema.parse(options.email)
+      const name = authNameSchema.parse(options.name)
+      const password = authPasswordSchema.parse(options.password)
+      const existingUser = await db.query.users.findFirst({
+        where: eq(users.email, email),
+      })
+
+      if (existingUser) {
+        console.error(`❌ User with email ${email} already exists`)
+        process.exit(1)
+      }
+
+      const [user] = await db
+        .insert(users)
+        .values({
+          email,
+          name,
+          passwordHash: await hashPassword(password),
+          isActive: true,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        })
+
+      console.log(`✅ Created admin user`)
+      console.log(`   ID: ${user.id}`)
+      console.log(`   Email: ${user.email}`)
+      console.log(`   Name: ${user.name}`)
+      process.exit(0)
+    } catch (error) {
+      try {
+        handleCliValidationError(error)
+      } catch (unexpectedError) {
+        error = unexpectedError
+      }
+      console.error('❌ Failed to create user:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('users:set-password')
+  .description('Set a new password for an existing admin user')
+  .requiredOption('--email <email>', 'User email address')
+  .requiredOption('--password <password>', 'New password')
+  .action(async (options: { email: string; password: string }) => {
+    try {
+      const email = authEmailSchema.parse(options.email)
+      const password = authPasswordSchema.parse(options.password)
+      const [user] = await db
+        .update(users)
+        .set({
+          passwordHash: await hashPassword(password),
+          updatedAt: new Date(),
+        })
+        .where(eq(users.email, email))
+        .returning({
+          id: users.id,
+          email: users.email,
+          name: users.name,
+        })
+
+      if (!user) {
+        console.error(`❌ User with email ${email} not found`)
+        process.exit(1)
+      }
+
+      console.log(`✅ Updated password for ${user.email}`)
+      process.exit(0)
+    } catch (error) {
+      try {
+        handleCliValidationError(error)
+      } catch (unexpectedError) {
+        error = unexpectedError
+      }
+      console.error('❌ Failed to update password:')
       console.error(error)
       process.exit(1)
     }

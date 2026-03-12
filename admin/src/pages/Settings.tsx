@@ -1,6 +1,7 @@
 import { trpc } from '@/lib/trpc';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { UsersPanel } from '@/components/users/UsersPanel';
 import { toast } from 'sonner';
 import { Download, FileJson, Loader2 } from 'lucide-react';
 
@@ -222,6 +223,8 @@ export function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      <UsersPanel />
     </div>
   );
 }

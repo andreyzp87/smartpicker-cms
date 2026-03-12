@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { exportService } from '../services/export.service'
 import { TRPCError } from '@trpc/server'
 
@@ -6,7 +6,7 @@ export const exportsRouter = router({
   /**
    * Generate all exports for the Astro frontend
    */
-  generateAll: publicProcedure.mutation(async () => {
+  generateAll: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateAllExports()
 
@@ -27,7 +27,7 @@ export const exportsRouter = router({
   /**
    * Generate products export only
    */
-  generateProducts: publicProcedure.mutation(async () => {
+  generateProducts: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateProductsExport()
 
@@ -48,7 +48,7 @@ export const exportsRouter = router({
   /**
    * Generate manufacturers export only
    */
-  generateManufacturers: publicProcedure.mutation(async () => {
+  generateManufacturers: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateManufacturersExport()
 
@@ -69,7 +69,7 @@ export const exportsRouter = router({
   /**
    * Generate categories export only
    */
-  generateCategories: publicProcedure.mutation(async () => {
+  generateCategories: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateCategoriesExport()
 
@@ -90,7 +90,7 @@ export const exportsRouter = router({
   /**
    * Generate hubs export only
    */
-  generateHubs: publicProcedure.mutation(async () => {
+  generateHubs: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateHubsExport()
 
@@ -111,7 +111,7 @@ export const exportsRouter = router({
   /**
    * Generate protocols export only
    */
-  generateProtocols: publicProcedure.mutation(async () => {
+  generateProtocols: protectedProcedure.mutation(async () => {
     try {
       const result = await exportService.generateProtocolsExport()
 
@@ -132,7 +132,7 @@ export const exportsRouter = router({
   /**
    * List all exported files
    */
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     try {
       const files = await exportService.listExports()
 

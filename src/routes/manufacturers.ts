@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { z } from 'zod'
 import { manufacturerCreateSchema, manufacturerUpdateSchema } from '../shared/schemas'
 import { db } from '../db/client'
@@ -6,7 +6,7 @@ import { manufacturers } from '../db/schema'
 import { eq, asc } from 'drizzle-orm'
 
 export const manufacturersRouter = router({
-  list: publicProcedure.query(async () => {
+  list: protectedProcedure.query(async () => {
     const items = await db.query.manufacturers.findMany({
       orderBy: asc(manufacturers.name),
     });
@@ -14,7 +14,7 @@ export const manufacturersRouter = router({
     return items;
   }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const manufacturer = await db.query.manufacturers.findFirst({
@@ -24,7 +24,7 @@ export const manufacturersRouter = router({
       return manufacturer ?? null;
     }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(manufacturerCreateSchema)
     .mutation(async ({ input }) => {
       const [manufacturer] = await db
@@ -39,7 +39,7 @@ export const manufacturersRouter = router({
       return manufacturer;
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
@@ -63,7 +63,7 @@ export const manufacturersRouter = router({
       return manufacturer;
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await db.delete(manufacturers).where(eq(manufacturers.id, input.id));

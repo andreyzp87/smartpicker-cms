@@ -6,8 +6,12 @@ import { hubsRouter } from './hubs'
 import { importsRouter } from './imports'
 import { compatibilityRouter } from './compatibility'
 import { exportsRouter } from './exports'
+import { authRouter } from './auth'
+import { usersRouter } from './users'
 
 export const appRouter = router({
+  auth: authRouter,
+  users: usersRouter,
   products: productsRouter,
   manufacturers: manufacturersRouter,
   categories: categoriesRouter,

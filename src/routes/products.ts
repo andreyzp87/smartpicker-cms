@@ -1,4 +1,4 @@
-import { router, publicProcedure } from './trpc'
+import { protectedProcedure, router } from './trpc'
 import { z } from 'zod'
 import {
   productCreateSchema,
@@ -11,7 +11,7 @@ import { products } from '../db/schema'
 import { and, or, eq, ilike, asc, desc, count } from 'drizzle-orm'
 
 export const productsRouter = router({
-  list: publicProcedure
+  list: protectedProcedure
     .input(productFilterSchema.merge(paginationSchema))
     .query(async ({ input }) => {
       const {
@@ -96,7 +96,7 @@ export const productsRouter = router({
       }
     }),
 
-  byId: publicProcedure
+  byId: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .query(async ({ input }) => {
       const product = await db.query.products.findFirst({
@@ -112,7 +112,7 @@ export const productsRouter = router({
       return product ?? null
     }),
 
-  bySlug: publicProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
+  bySlug: protectedProcedure.input(z.object({ slug: z.string() })).query(async ({ input }) => {
     const product = await db.query.products.findFirst({
       where: eq(products.slug, input.slug),
       with: {
@@ -126,7 +126,7 @@ export const productsRouter = router({
     return product ?? null
   }),
 
-  create: publicProcedure
+  create: protectedProcedure
     .input(productCreateSchema)
     .mutation(async ({ input }) => {
       const [product] = await db
@@ -141,7 +141,7 @@ export const productsRouter = router({
       return product
     }),
 
-  update: publicProcedure
+  update: protectedProcedure
     .input(z.object({ id: z.number().int().positive(), data: productUpdateSchema }))
     .mutation(async ({ input }) => {
       const [product] = await db
@@ -160,7 +160,7 @@ export const productsRouter = router({
       return product
     }),
 
-  delete: publicProcedure
+  delete: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input }) => {
       await db.delete(products).where(eq(products.id, input.id))

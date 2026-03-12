@@ -330,7 +330,7 @@ interface ExportSnapshot {
   sitemap: SitemapEntry[]
 }
 
-interface ExportWriteResult {
+export interface ExportWriteResult {
   url: string
   count: number
 }
@@ -904,13 +904,13 @@ export class ExportService {
     }
 
     const sitemap: SitemapEntry[] = [
-      { path: '/', type: 'static', lastModified: generated },
-      { path: '/about', type: 'static', lastModified: generated },
-      { path: '/devices', type: 'static', lastModified: generated },
-      { path: '/hubs', type: 'static', lastModified: generated },
-      { path: '/manufacturers', type: 'static', lastModified: generated },
-      { path: '/categories', type: 'static', lastModified: generated },
-      { path: '/protocols', type: 'static', lastModified: generated },
+      { path: '/', type: 'static' as const, lastModified: generated },
+      { path: '/about', type: 'static' as const, lastModified: generated },
+      { path: '/devices', type: 'static' as const, lastModified: generated },
+      { path: '/hubs', type: 'static' as const, lastModified: generated },
+      { path: '/manufacturers', type: 'static' as const, lastModified: generated },
+      { path: '/categories', type: 'static' as const, lastModified: generated },
+      { path: '/protocols', type: 'static' as const, lastModified: generated },
       ...productSummaries.map((product) => ({
         path: `/devices/${product.slug}`,
         type: 'device' as const,

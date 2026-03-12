@@ -38,6 +38,42 @@ export const zwaveFrequencyEnum = pgEnum('zwave_frequency', ['us', 'eu', 'au', '
 export const mergeConfidenceEnum = pgEnum('merge_confidence', ['exact', 'high', 'medium', 'low'])
 
 // Tables
+export const users = pgTable(
+  'users',
+  {
+    id: serial('id').primaryKey(),
+    email: varchar('email', { length: 255 }).notNull(),
+    name: varchar('name', { length: 255 }).notNull(),
+    passwordHash: text('password_hash').notNull(),
+    isActive: boolean('is_active').default(true).notNull(),
+    lastLoginAt: timestamp('last_login_at'),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+    updatedAt: timestamp('updated_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    emailUnique: unique('users_email_unique').on(table.email),
+  }),
+)
+
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: serial('id').primaryKey(),
+    userId: integer('user_id')
+      .references(() => users.id, { onDelete: 'cascade' })
+      .notNull(),
+    tokenHash: varchar('token_hash', { length: 64 }).notNull(),
+    expiresAt: timestamp('expires_at').notNull(),
+    lastSeenAt: timestamp('last_seen_at').defaultNow().notNull(),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
+  },
+  (table) => ({
+    tokenHashUnique: unique('sessions_token_hash_unique').on(table.tokenHash),
+    userIdx: index('sessions_user_idx').on(table.userId),
+    expiresAtIdx: index('sessions_expires_at_idx').on(table.expiresAt),
+  }),
+)
+
 export const manufacturers = pgTable('manufacturers', {
   id: serial('id').primaryKey(),
   slug: varchar('slug', { length: 255 }).unique().notNull(),
@@ -309,5 +345,16 @@ export const productPricesRelations = relations(productPrices, ({ one }) => ({
   retailer: one(retailers, {
     fields: [productPrices.retailerId],
     references: [retailers.id],
+  }),
+}))
+
+export const usersRelations = relations(users, ({ many }) => ({
+  sessions: many(sessions),
+}))
+
+export const sessionsRelations = relations(sessions, ({ one }) => ({
+  user: one(users, {
+    fields: [sessions.userId],
+    references: [users.id],
   }),
 }))
