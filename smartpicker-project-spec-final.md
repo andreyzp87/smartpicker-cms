@@ -253,11 +253,28 @@ smartpicker-cms/
 │   │   └── zwave-js.json
 │   └── exports/                  # Generated JSON (gitignored)
 │       ├── products.json
+│       ├── products/slugs.json
 │       ├── products/
 │       │   └── [slug].json
 │       ├── manufacturers.json
+│       ├── manufacturers/slugs.json
+│       ├── manufacturers/
+│       │   └── [slug].json
 │       ├── categories.json
-│       └── hubs.json
+│       ├── categories/paths.json
+│       ├── categories/
+│       │   └── [...path].json
+│       ├── hubs.json
+│       ├── hubs/slugs.json
+│       ├── hubs/
+│       │   └── [slug].json
+│       ├── protocols.json
+│       ├── protocols/slugs.json
+│       ├── protocols/
+│       │   └── [slug].json
+│       ├── site.json
+│       ├── sitemap.json
+│       └── types.ts
 │
 ├── drizzle.config.ts
 ├── tsup.config.ts
@@ -282,8 +299,10 @@ smartpicker-web/
 │   │   │   ├── index.astro
 │   │   │   └── [slug].astro
 │   │   ├── categories/
-│   │   │   └── [slug].astro
-│   │   └── manufacturers/
+│   │   │   └── [...slug].astro
+│   │   ├── manufacturers/
+│   │       └── [slug].astro
+│   │   └── protocols/
 │   │       └── [slug].astro
 │   │
 │   ├── components/
@@ -390,8 +409,13 @@ async function onExportComplete() {
 // smartpicker-web/src/lib/data.ts
 const CMS_URL = import.meta.env.CMS_URL || 'https://cms.smartpicker.io'
 
-export async function getProducts() {
+export async function getProductsIndex() {
   const res = await fetch(`${CMS_URL}/api/exports/products.json`)
+  return res.json()
+}
+
+export async function getProductSlugs() {
+  const res = await fetch(`${CMS_URL}/api/exports/products/slugs.json`)
   return res.json()
 }
 
@@ -412,20 +436,22 @@ export async function getManufacturers() {
 ```astro
 ---
 // smartpicker-web/src/pages/devices/[slug].astro
-import { getProduct, getProducts } from '../../lib/data'
+import { getProduct, getProductSlugs } from '../../lib/data'
 import DeviceLayout from '../../layouts/DeviceLayout.astro'
 
 export async function getStaticPaths() {
-  const products = await getProducts()
-  return products.map((p) => ({ params: { slug: p.slug } }))
+  const { slugs } = await getProductSlugs()
+  return slugs.map((slug) => ({ params: { slug } }))
 }
 
 const { slug } = Astro.params
-const product = await getProduct(slug)
+const data = await getProduct(slug)
 
-if (!product) {
+if (!data) {
   return Astro.redirect('/404')
 }
+
+const { product } = data
 ---
 
 <DeviceLayout title={product.name}>
@@ -446,8 +472,17 @@ Since repos are separate, we don't share code via npm packages. Instead:
 ```
 /api/exports/
 ├── products.json
+├── products/slugs.json
+├── products/[slug].json
+├── manufacturers/[slug].json
+├── hubs/[slug].json
+├── categories/paths.json
+├── categories/[...path].json
+├── protocols/[slug].json
+├── site.json
+├── sitemap.json
 ├── types.ts          # TypeScript types for the JSON
-└── schema.json       # JSON Schema (optional)
+└── ...other JSON indexes
 ```
 
 **2. Web repo copies types manually (or via script):**
