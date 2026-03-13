@@ -1,29 +1,33 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { productCreateSchema, type ProductCreate, type ProductStatus } from '@/shared/schemas';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { productCreateSchema, type ProductStatus } from '@/shared/schemas'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { trpc } from '@/lib/trpc';
-import { PROTOCOLS } from '@/shared/constants';
-import { Circle } from 'lucide-react';
+} from '@/components/ui/select'
+import { trpc } from '@/lib/trpc'
+import { PROTOCOLS } from '@/shared/constants'
+import { Circle } from 'lucide-react'
+
+type ProductFormInput = z.input<typeof productCreateSchema>
+type ProductFormOutput = z.output<typeof productCreateSchema>
 
 interface ProductFormProps {
-  initialData?: Partial<ProductCreate>;
-  onSubmit: (data: ProductCreate) => void;
-  isLoading?: boolean;
+  initialData?: Partial<ProductFormInput>
+  onSubmit: (data: ProductFormOutput) => void
+  isLoading?: boolean
 }
 
 export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormProps) {
-  const { data: manufacturers } = trpc.manufacturers.list.useQuery();
-  const { data: categories } = trpc.categories.list.useQuery();
+  const { data: manufacturers } = trpc.manufacturers.list.useQuery()
+  const { data: categories } = trpc.categories.list.useQuery()
 
   const {
     register,
@@ -31,8 +35,8 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
     formState: { errors },
     setValue,
     watch,
-  } = useForm<ProductCreate>({
-    resolver: zodResolver(productCreateSchema) as any,
+  } = useForm<ProductFormInput, unknown, ProductFormOutput>({
+    resolver: zodResolver(productCreateSchema),
     defaultValues: initialData ?? {
       localControl: false,
       cloudDependent: false,
@@ -40,36 +44,30 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
       matterCertified: false,
       status: 'draft',
     },
-  });
+  })
 
-  const protocol = watch('primaryProtocol');
-  const status = watch('status');
+  const protocol = watch('primaryProtocol')
+  const status = watch('status')
 
   return (
-    <form onSubmit={handleSubmit(onSubmit as any)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
       <div className="grid grid-cols-2 gap-4">
         <div>
           <Label htmlFor="name">Name</Label>
           <Input id="name" {...register('name')} />
-          {errors.name && (
-            <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="slug">Slug</Label>
           <Input id="slug" {...register('slug')} />
-          {errors.slug && (
-            <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>
-          )}
+          {errors.slug && <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="model">Model</Label>
           <Input id="model" {...register('model')} />
-          {errors.model && (
-            <p className="text-sm text-red-600 mt-1">{errors.model.message}</p>
-          )}
+          {errors.model && <p className="text-sm text-red-600 mt-1">{errors.model.message}</p>}
         </div>
 
         <div>
@@ -120,7 +118,9 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
           <Label htmlFor="primaryProtocol">Protocol</Label>
           <Select
             value={protocol ?? undefined}
-            onValueChange={(value) => setValue('primaryProtocol', value as ProductCreate['primaryProtocol'])}
+            onValueChange={(value) =>
+              setValue('primaryProtocol', value as ProductFormInput['primaryProtocol'])
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select protocol" />
@@ -200,9 +200,7 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
             </SelectItem>
           </SelectContent>
         </Select>
-        {errors.status && (
-          <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>
-        )}
+        {errors.status && <p className="text-sm text-red-600 mt-1">{errors.status.message}</p>}
         <p className="text-sm text-gray-600 mt-1">
           Only published products appear in the public database
         </p>
@@ -212,5 +210,5 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
         {isLoading ? 'Saving...' : 'Save Product'}
       </Button>
     </form>
-  );
+  )
 }

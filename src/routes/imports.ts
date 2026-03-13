@@ -26,9 +26,7 @@ export const importsRouter = router({
 
       if (processed !== undefined) {
         conditions.push(
-          processed
-            ? isNotNull(rawImports.processedAt)
-            : isNull(rawImports.processedAt)
+          processed ? isNotNull(rawImports.processedAt) : isNull(rawImports.processedAt),
         )
       }
 
@@ -42,10 +40,7 @@ export const importsRouter = router({
           .orderBy(desc(rawImports.importedAt))
           .limit(limit)
           .offset(offset),
-        db
-          .select({ count: count() })
-          .from(rawImports)
-          .where(whereClause),
+        db.select({ count: count() }).from(rawImports).where(whereClause),
       ])
 
       return {
@@ -54,20 +49,16 @@ export const importsRouter = router({
       }
     }),
 
-  byId: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const rawImport = await db.query.rawImports.findFirst({
-        where: eq(rawImports.id, input.id),
-      })
+  byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const rawImport = await db.query.rawImports.findFirst({
+      where: eq(rawImports.id, input.id),
+    })
 
-      return rawImport ?? null
-    }),
+    return rawImport ?? null
+  }),
 
-  trigger: protectedProcedure
-    .input(z.object({ source: importSourceSchema }))
-    .mutation(async ({ input }) => {
-      // TODO: Queue import job
-      return { jobId: 'placeholder-job-id' }
-    }),
+  trigger: protectedProcedure.input(z.object({ source: importSourceSchema })).mutation(async () => {
+    // TODO: Queue import job
+    return { jobId: 'placeholder-job-id' }
+  }),
 })

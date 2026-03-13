@@ -17,43 +17,32 @@ export const hubsRouter = router({
     return items
   }),
 
-  byId: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const hub = await db.query.hubs.findFirst({
-        where: eq(hubs.id, input.id),
-        with: {
-          manufacturer: true,
-        },
-      })
+  byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const hub = await db.query.hubs.findFirst({
+      where: eq(hubs.id, input.id),
+      with: {
+        manufacturer: true,
+      },
+    })
 
-      return hub ?? null
-    }),
+    return hub ?? null
+  }),
 
-  create: protectedProcedure
-    .input(hubCreateSchema)
-    .mutation(async ({ input }) => {
-      const [hub] = await db
-        .insert(hubs)
-        .values(input)
-        .returning()
+  create: protectedProcedure.input(hubCreateSchema).mutation(async ({ input }) => {
+    const [hub] = await db.insert(hubs).values(input).returning()
 
-      return hub
-    }),
+    return hub
+  }),
 
   update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
         data: hubUpdateSchema,
-      })
+      }),
     )
     .mutation(async ({ input }) => {
-      const [hub] = await db
-        .update(hubs)
-        .set(input.data)
-        .where(eq(hubs.id, input.id))
-        .returning()
+      const [hub] = await db.update(hubs).set(input.data).where(eq(hubs.id, input.id)).returning()
 
       if (!hub) {
         throw new Error('Hub not found')
@@ -62,11 +51,9 @@ export const hubsRouter = router({
       return hub
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await db.delete(hubs).where(eq(hubs.id, input.id))
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    await db.delete(hubs).where(eq(hubs.id, input.id))
 
-      return { success: true }
-    }),
+    return { success: true }
+  }),
 })

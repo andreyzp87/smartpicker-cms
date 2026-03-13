@@ -1,29 +1,32 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { hubCreateSchema, type HubCreate } from '@/shared/schemas';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { z } from 'zod'
+import { hubCreateSchema, type Protocol } from '@/shared/schemas'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { trpc } from '@/lib/trpc';
-import { PROTOCOLS } from '@/shared/constants';
+} from '@/components/ui/select'
+import { trpc } from '@/lib/trpc'
+import { PROTOCOLS } from '@/shared/constants'
 
-type HubFormData = HubCreate;
+type HubFormInput = z.input<typeof hubCreateSchema>
+type HubFormOutput = z.output<typeof hubCreateSchema>
+const protocolOptions = Object.keys(PROTOCOLS) as Protocol[]
 
 interface HubFormProps {
-  initialData?: Partial<HubFormData>;
-  onSubmit: (data: HubFormData) => void;
-  isLoading?: boolean;
+  initialData?: Partial<HubFormInput>
+  onSubmit: (data: HubFormOutput) => void
+  isLoading?: boolean
 }
 
 export function HubForm({ initialData, onSubmit, isLoading }: HubFormProps) {
-  const { data: manufacturers } = trpc.manufacturers.list.useQuery();
+  const { data: manufacturers } = trpc.manufacturers.list.useQuery()
 
   const {
     register,
@@ -31,24 +34,26 @@ export function HubForm({ initialData, onSubmit, isLoading }: HubFormProps) {
     formState: { errors },
     setValue,
     watch,
-  } = useForm<HubFormData>({
-    resolver: zodResolver(hubCreateSchema) as any,
+  } = useForm<HubFormInput, unknown, HubFormOutput>({
+    resolver: zodResolver(hubCreateSchema),
     defaultValues: initialData ?? {
       protocolsSupported: [],
     },
-  });
+  })
 
-  const manufacturerId = watch('manufacturerId');
-  const protocolsSupported = watch('protocolsSupported') || [];
+  const manufacturerId = watch('manufacturerId')
+  const protocolsSupported = watch('protocolsSupported') ?? []
 
-  const toggleProtocol = (protocol: string) => {
-    const current = protocolsSupported || [];
-    if (current.includes(protocol as any)) {
-      setValue('protocolsSupported', current.filter((p) => p !== protocol) as any);
+  const toggleProtocol = (protocol: Protocol) => {
+    if (protocolsSupported.includes(protocol)) {
+      setValue(
+        'protocolsSupported',
+        protocolsSupported.filter((currentProtocol) => currentProtocol !== protocol),
+      )
     } else {
-      setValue('protocolsSupported', [...current, protocol] as any);
+      setValue('protocolsSupported', [...protocolsSupported, protocol])
     }
-  };
+  }
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -56,24 +61,22 @@ export function HubForm({ initialData, onSubmit, isLoading }: HubFormProps) {
         <div>
           <Label htmlFor="name">Name</Label>
           <Input id="name" {...register('name')} />
-          {errors.name && (
-            <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="slug">Slug</Label>
           <Input id="slug" {...register('slug')} />
-          {errors.slug && (
-            <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>
-          )}
+          {errors.slug && <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>}
         </div>
 
         <div className="col-span-2">
           <Label htmlFor="manufacturerId">Manufacturer</Label>
           <Select
             value={manufacturerId?.toString() ?? 'none'}
-            onValueChange={(value) => setValue('manufacturerId', value === 'none' ? null : Number(value))}
+            onValueChange={(value) =>
+              setValue('manufacturerId', value === 'none' ? null : Number(value))
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select manufacturer" />
@@ -96,15 +99,15 @@ export function HubForm({ initialData, onSubmit, isLoading }: HubFormProps) {
       <div>
         <Label>Protocols Supported</Label>
         <div className="grid grid-cols-3 gap-3 mt-2">
-          {Object.entries(PROTOCOLS).map(([key, value]) => (
-            <label key={key} className="flex items-center gap-2">
+          {protocolOptions.map((protocol) => (
+            <label key={protocol} className="flex items-center gap-2">
               <input
                 type="checkbox"
-                checked={protocolsSupported.includes(key as any)}
-                onChange={() => toggleProtocol(key)}
+                checked={protocolsSupported.includes(protocol)}
+                onChange={() => toggleProtocol(protocol)}
                 className="rounded"
               />
-              <span className="text-sm">{value.name}</span>
+              <span className="text-sm">{PROTOCOLS[protocol].name}</span>
             </label>
           ))}
         </div>
@@ -129,5 +132,5 @@ export function HubForm({ initialData, onSubmit, isLoading }: HubFormProps) {
         {isLoading ? 'Saving...' : 'Save Hub'}
       </Button>
     </form>
-  );
+  )
 }

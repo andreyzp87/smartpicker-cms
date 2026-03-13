@@ -8,8 +8,8 @@ export interface ExtractedProduct {
   zigbeeDetails?: {
     ieeeManufacturer?: string
     modelId?: string
-    endpoints?: any[]
-    exposes?: any[]
+    endpoints?: Record<string, unknown>[]
+    exposes?: Record<string, unknown>[]
   }
   zwaveDetails?: {
     zwaveManufacturerId?: string

@@ -14,10 +14,7 @@ export interface MatchKey {
 export function normalize(str: string | null | undefined): string {
   if (!str) return ''
 
-  return str
-    .toLowerCase()
-    .trim()
-    .replace(/[^\w]/g, '') // Remove all non-alphanumeric (spaces, dashes, dots, etc)
+  return str.toLowerCase().trim().replace(/[^\w]/g, '') // Remove all non-alphanumeric (spaces, dashes, dots, etc)
 }
 
 /**

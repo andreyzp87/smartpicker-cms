@@ -114,7 +114,8 @@ export class S3StorageDriver implements StorageDriver {
       })
 
       const response = await this.client.send(command)
-      const pageKeys = response.Contents?.map((obj) => obj.Key).filter((key): key is string => !!key) ?? []
+      const pageKeys =
+        response.Contents?.map((obj) => obj.Key).filter((key): key is string => !!key) ?? []
 
       keys.push(...pageKeys)
       continuationToken = response.IsTruncated ? response.NextContinuationToken : undefined
@@ -127,9 +128,7 @@ export class S3StorageDriver implements StorageDriver {
     // If custom public URL base is provided, use it
     if (this.publicUrlBase) {
       const cleanKey = key.startsWith('/') ? key.slice(1) : key
-      const base = this.publicUrlBase.endsWith('/')
-        ? this.publicUrlBase
-        : `${this.publicUrlBase}/`
+      const base = this.publicUrlBase.endsWith('/') ? this.publicUrlBase : `${this.publicUrlBase}/`
       return `${base}${cleanKey}`
     }
 

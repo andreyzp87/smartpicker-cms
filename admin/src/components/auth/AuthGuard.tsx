@@ -1,7 +1,7 @@
-import { Loader2, Lock } from 'lucide-react';
-import { Navigate, Outlet, useLocation } from 'react-router';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { trpc } from '@/lib/trpc';
+import { Loader2, Lock } from 'lucide-react'
+import { Navigate, Outlet, useLocation } from 'react-router'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { trpc } from '@/lib/trpc'
 
 function AuthLoadingState() {
   return (
@@ -19,26 +19,26 @@ function AuthLoadingState() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
 
 export function RequireAuth() {
-  const location = useLocation();
+  const location = useLocation()
   const { data, isLoading } = trpc.auth.me.useQuery(undefined, {
     retry: false,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
-  });
+  })
 
   if (isLoading) {
-    return <AuthLoadingState />;
+    return <AuthLoadingState />
   }
 
   if (!data?.user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />;
+    return <Navigate to="/login" replace state={{ from: location.pathname + location.search }} />
   }
 
-  return <Outlet />;
+  return <Outlet />
 }
 
 export function RedirectIfAuthenticated() {
@@ -46,15 +46,15 @@ export function RedirectIfAuthenticated() {
     retry: false,
     staleTime: 60_000,
     refetchOnWindowFocus: true,
-  });
+  })
 
   if (isLoading) {
-    return <AuthLoadingState />;
+    return <AuthLoadingState />
   }
 
   if (data?.user) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/" replace />
   }
 
-  return <Outlet />;
+  return <Outlet />
 }

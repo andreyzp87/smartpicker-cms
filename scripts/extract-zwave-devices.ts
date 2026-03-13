@@ -48,7 +48,15 @@
  */
 
 import { execSync } from 'child_process'
-import { writeFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync } from 'fs'
+import {
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  statSync,
+} from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import os from 'os'
@@ -108,7 +116,7 @@ try {
     // Shared templates in devices/templates/ directory
     const sharedTemplatesDir = join(devicesDir, 'templates')
     if (existsSync(sharedTemplatesDir)) {
-      const sharedTemplateFiles = readdirSync(sharedTemplatesDir).filter(f => f.endsWith('.json'))
+      const sharedTemplateFiles = readdirSync(sharedTemplatesDir).filter((f) => f.endsWith('.json'))
       for (const templateFile of sharedTemplateFiles) {
         const templatePath = join(sharedTemplatesDir, templateFile)
         try {
@@ -121,16 +129,15 @@ try {
     }
 
     // Manufacturer-specific templates in devices/0xXXXX/templates/
-    const manufacturerDirs = readdirSync(devicesDir)
-      .filter(dir => {
-        const fullPath = join(devicesDir, dir)
-        return statSync(fullPath).isDirectory() && dir.startsWith('0x')
-      })
+    const manufacturerDirs = readdirSync(devicesDir).filter((dir) => {
+      const fullPath = join(devicesDir, dir)
+      return statSync(fullPath).isDirectory() && dir.startsWith('0x')
+    })
 
     for (const mfrDir of manufacturerDirs) {
       const templatesDir = join(devicesDir, mfrDir, 'templates')
       if (existsSync(templatesDir)) {
-        const templateFiles = readdirSync(templatesDir).filter(f => f.endsWith('.json'))
+        const templateFiles = readdirSync(templatesDir).filter((f) => f.endsWith('.json'))
         for (const templateFile of templateFiles) {
           const templatePath = join(templatesDir, templateFile)
           const templateKey = `${mfrDir}/templates/${templateFile}`
@@ -150,7 +157,10 @@ try {
   }
 
   // Template resolution functions
-  function parseImportRef(importRef: string, deviceManufacturerId: string): {
+  function parseImportRef(
+    importRef: string,
+    deviceManufacturerId: string,
+  ): {
     type: 'master' | 'manufacturer' | 'cross-manufacturer' | 'internal'
     templateFile: string | null
     templateKey: string
@@ -256,7 +266,7 @@ try {
     }
 
     if (Array.isArray(obj)) {
-      return obj.map(item => resolveImports(item, deviceManufacturerId))
+      return obj.map((item) => resolveImports(item, deviceManufacturerId))
     }
 
     if (obj.$import) {
@@ -284,7 +294,7 @@ try {
   // Scan manufacturer directories (0x0063/, 0x0258/, etc.)
   console.log('📖 Scanning device directories and resolving templates...')
   const manufacturerDirs = readdirSync(devicesDir)
-    .filter(dir => {
+    .filter((dir) => {
       const fullPath = join(devicesDir, dir)
       return statSync(fullPath).isDirectory() && dir.startsWith('0x')
     })
@@ -303,7 +313,7 @@ try {
 
   for (const mfrDir of manufacturerDirs) {
     const mfrPath = join(devicesDir, mfrDir)
-    const deviceFiles = readdirSync(mfrPath).filter(f => f.endsWith('.json'))
+    const deviceFiles = readdirSync(mfrPath).filter((f) => f.endsWith('.json'))
 
     totalFiles += deviceFiles.length
 
@@ -344,7 +354,7 @@ try {
 
         // Count successfully resolved imports
         const importsAfter = countImports(deviceData)
-        resolvedImportsCount += (importsBefore - importsAfter)
+        resolvedImportsCount += importsBefore - importsAfter
 
         // Add manufacturer name from lookup
         if (deviceData.manufacturerId && manufacturersLookup[deviceData.manufacturerId]) {
@@ -362,14 +372,16 @@ try {
         processedFiles++
 
         if (processedFiles % 100 === 0) {
-          console.log(`   Processed ${processedFiles}/${totalFiles} files... (${allDevices.length} devices)`)
+          console.log(
+            `   Processed ${processedFiles}/${totalFiles} files... (${allDevices.length} devices)`,
+          )
         }
       } catch (error) {
         skippedFiles++
         const errorMsg = error instanceof Error ? error.message : String(error)
         errors.push({
           file: `${mfrDir}/${deviceFile}`,
-          error: errorMsg
+          error: errorMsg,
         })
         // Only log first 10 errors to avoid cluttering output
         if (skippedFiles <= 10) {
@@ -380,7 +392,9 @@ try {
   }
 
   console.log(`✓ Extracted and resolved ${allDevices.length} devices`)
-  console.log(`   Total files: ${totalFiles}, Processed: ${processedFiles}, Skipped: ${skippedFiles}`)
+  console.log(
+    `   Total files: ${totalFiles}, Processed: ${processedFiles}, Skipped: ${skippedFiles}`,
+  )
   console.log(`   Template imports resolved: ${resolvedImportsCount}`)
 
   if (skippedFiles > 10) {
@@ -425,8 +439,12 @@ try {
   console.log('✨ Extraction and resolution completed successfully!')
   console.log('\nNext steps:')
   console.log('  1. Review metadata: cat data/sources/zwave-js.json | jq ".metadata"')
-  console.log('  2. Check resolved params: cat data/sources/zwave-js.json | jq ".devices[100].paramInformation[0]"')
-  console.log('  3. Check manufacturer enrichment: cat data/sources/zwave-js.json | jq ".devices[0]._manufacturerName"')
+  console.log(
+    '  2. Check resolved params: cat data/sources/zwave-js.json | jq ".devices[100].paramInformation[0]"',
+  )
+  console.log(
+    '  3. Check manufacturer enrichment: cat data/sources/zwave-js.json | jq ".devices[0]._manufacturerName"',
+  )
   if (errors.length > 0) {
     console.log(`  4. Review parsing errors: cat data/sources/zwave-js.json | jq ".errors"`)
     console.log('  5. Import into database: pnpm cli import zwave-js (when implemented)')

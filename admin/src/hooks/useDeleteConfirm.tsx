@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState } from 'react'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -8,24 +8,24 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
 
 export function useDeleteConfirm() {
-  const [isOpen, setIsOpen] = useState(false);
-  const [deleteAction, setDeleteAction] = useState<(() => void) | null>(null);
+  const [isOpen, setIsOpen] = useState(false)
+  const [deleteAction, setDeleteAction] = useState<(() => void) | null>(null)
 
   const confirm = (action: () => void) => {
-    setDeleteAction(() => action);
-    setIsOpen(true);
-  };
+    setDeleteAction(() => action)
+    setIsOpen(true)
+  }
 
   const handleConfirm = () => {
     if (deleteAction) {
-      deleteAction();
+      deleteAction()
     }
-    setIsOpen(false);
-    setDeleteAction(null);
-  };
+    setIsOpen(false)
+    setDeleteAction(null)
+  }
 
   const Dialog = () => (
     <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
@@ -44,7 +44,7 @@ export function useDeleteConfirm() {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 
-  return { confirm, Dialog };
+  return { confirm, Dialog }
 }

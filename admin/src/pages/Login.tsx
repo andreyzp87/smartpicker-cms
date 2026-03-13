@@ -1,43 +1,43 @@
-import { FormEvent, useState } from 'react';
-import { Loader2, Lock } from 'lucide-react';
-import { useLocation, useNavigate } from 'react-router';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
+import { FormEvent, useState } from 'react'
+import { Loader2, Lock } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { trpc } from '@/lib/trpc'
+import { toast } from 'sonner'
 
 type LoginLocationState = {
-  from?: string;
-};
+  from?: string
+}
 
 export function Login() {
-  const navigate = useNavigate();
-  const location = useLocation();
-  const utils = trpc.useUtils();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const navigate = useNavigate()
+  const location = useLocation()
+  const utils = trpc.useUtils()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const loginMutation = trpc.auth.login.useMutation({
     onSuccess: async (data) => {
-      utils.auth.me.setData(undefined, { user: data.user });
-      await utils.auth.me.invalidate();
-      toast.success('Signed in successfully');
-      navigate((location.state as LoginLocationState | null)?.from || '/', { replace: true });
+      utils.auth.me.setData(undefined, { user: data.user })
+      await utils.auth.me.invalidate()
+      toast.success('Signed in successfully')
+      navigate((location.state as LoginLocationState | null)?.from || '/', { replace: true })
     },
     onError: (error) => {
-      toast.error(error.message || 'Unable to sign in');
+      toast.error(error.message || 'Unable to sign in')
     },
-  });
+  })
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+    event.preventDefault()
     loginMutation.mutate({
       email,
       password,
-    });
-  };
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
@@ -93,5 +93,5 @@ export function Login() {
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }

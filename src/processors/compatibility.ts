@@ -76,10 +76,9 @@ export async function createCompatibilityRecords(
     const existing = await db
       .select()
       .from(deviceCompatibility)
-      .where(and(
-        eq(deviceCompatibility.productId, productId),
-        eq(deviceCompatibility.hubId, hubId)
-      ))
+      .where(
+        and(eq(deviceCompatibility.productId, productId), eq(deviceCompatibility.hubId, hubId)),
+      )
       .limit(1)
 
     if (existing.length > 0) continue

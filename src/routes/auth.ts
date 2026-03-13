@@ -98,9 +98,7 @@ export const authRouter = router({
     const sessionToken = getSessionCookie(ctx.c)
 
     if (sessionToken) {
-      await db
-        .delete(sessions)
-        .where(eq(sessions.tokenHash, hashSessionToken(sessionToken)))
+      await db.delete(sessions).where(eq(sessions.tokenHash, hashSessionToken(sessionToken)))
     }
 
     clearSessionCookie(ctx.c)

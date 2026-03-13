@@ -1,33 +1,33 @@
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { categoryCreateSchema } from '@/shared/schemas';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { categoryCreateSchema } from '@/shared/schemas'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { trpc } from '@/lib/trpc';
+} from '@/components/ui/select'
+import { trpc } from '@/lib/trpc'
 
 type CategoryFormData = {
-  name: string;
-  slug: string;
-  parentId?: number | null;
-  sortOrder?: number;
-};
+  name: string
+  slug: string
+  parentId?: number | null
+  sortOrder?: number
+}
 
 interface CategoryFormProps {
-  initialData?: Partial<CategoryFormData>;
-  onSubmit: (data: CategoryFormData) => void;
-  isLoading?: boolean;
+  initialData?: Partial<CategoryFormData>
+  onSubmit: (data: CategoryFormData) => void
+  isLoading?: boolean
 }
 
 export function CategoryForm({ initialData, onSubmit, isLoading }: CategoryFormProps) {
-  const { data: categories } = trpc.categories.list.useQuery();
+  const { data: categories } = trpc.categories.list.useQuery()
 
   const {
     register,
@@ -40,9 +40,9 @@ export function CategoryForm({ initialData, onSubmit, isLoading }: CategoryFormP
     defaultValues: initialData ?? {
       sortOrder: 0,
     },
-  });
+  })
 
-  const parentId = watch('parentId');
+  const parentId = watch('parentId')
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -50,17 +50,13 @@ export function CategoryForm({ initialData, onSubmit, isLoading }: CategoryFormP
         <div>
           <Label htmlFor="name">Name</Label>
           <Input id="name" {...register('name')} />
-          {errors.name && (
-            <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>
-          )}
+          {errors.name && <p className="text-sm text-red-600 mt-1">{errors.name.message}</p>}
         </div>
 
         <div>
           <Label htmlFor="slug">Slug</Label>
           <Input id="slug" {...register('slug')} />
-          {errors.slug && (
-            <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>
-          )}
+          {errors.slug && <p className="text-sm text-red-600 mt-1">{errors.slug.message}</p>}
         </div>
 
         <div>
@@ -88,11 +84,7 @@ export function CategoryForm({ initialData, onSubmit, isLoading }: CategoryFormP
 
         <div>
           <Label htmlFor="sortOrder">Sort Order</Label>
-          <Input
-            id="sortOrder"
-            type="number"
-            {...register('sortOrder', { valueAsNumber: true })}
-          />
+          <Input id="sortOrder" type="number" {...register('sortOrder', { valueAsNumber: true })} />
           {errors.sortOrder && (
             <p className="text-sm text-red-600 mt-1">{errors.sortOrder.message}</p>
           )}
@@ -103,5 +95,5 @@ export function CategoryForm({ initialData, onSubmit, isLoading }: CategoryFormP
         {isLoading ? 'Saving...' : 'Save Category'}
       </Button>
     </form>
-  );
+  )
 }

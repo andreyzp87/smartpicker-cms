@@ -33,10 +33,7 @@ export const productsRouter = router({
 
       if (search) {
         conditions.push(
-          or(
-            ilike(products.name, `%${search}%`),
-            ilike(products.model, `%${search}%`),
-          ),
+          or(ilike(products.name, `%${search}%`), ilike(products.model, `%${search}%`)),
         )
       }
 
@@ -84,10 +81,7 @@ export const productsRouter = router({
           .orderBy(orderByClause)
           .limit(limit)
           .offset(offset),
-        db
-          .select({ count: count() })
-          .from(products)
-          .where(whereClause),
+        db.select({ count: count() }).from(products).where(whereClause),
       ])
 
       return {
@@ -126,20 +120,18 @@ export const productsRouter = router({
     return product ?? null
   }),
 
-  create: protectedProcedure
-    .input(productCreateSchema)
-    .mutation(async ({ input }) => {
-      const [product] = await db
-        .insert(products)
-        .values({
-          ...input,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning()
+  create: protectedProcedure.input(productCreateSchema).mutation(async ({ input }) => {
+    const [product] = await db
+      .insert(products)
+      .values({
+        ...input,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning()
 
-      return product
-    }),
+    return product
+  }),
 
   update: protectedProcedure
     .input(z.object({ id: z.number().int().positive(), data: productUpdateSchema }))

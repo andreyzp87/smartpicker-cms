@@ -60,7 +60,7 @@ export async function findDuplicates(): Promise<DuplicateGroup[]> {
   // Filter to only groups with duplicates (2+ products)
   const duplicateGroups: DuplicateGroup[] = []
 
-  for (const [keyString, productList] of groupedByMatchKey.entries()) {
+  for (const productList of groupedByMatchKey.values()) {
     if (productList.length > 1) {
       // Reconstruct match key from the first product
       const firstProduct = productList[0]

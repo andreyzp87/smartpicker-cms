@@ -17,37 +17,30 @@ export const categoriesRouter = router({
     return items
   }),
 
-  byId: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const category = await db.query.categories.findFirst({
-        where: eq(categories.id, input.id),
-        with: {
-          parent: true,
-          children: true,
-        },
-      })
+  byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const category = await db.query.categories.findFirst({
+      where: eq(categories.id, input.id),
+      with: {
+        parent: true,
+        children: true,
+      },
+    })
 
-      return category ?? null
-    }),
+    return category ?? null
+  }),
 
-  create: protectedProcedure
-    .input(categoryCreateSchema)
-    .mutation(async ({ input }) => {
-      const [category] = await db
-        .insert(categories)
-        .values(input)
-        .returning()
+  create: protectedProcedure.input(categoryCreateSchema).mutation(async ({ input }) => {
+    const [category] = await db.insert(categories).values(input).returning()
 
-      return category
-    }),
+    return category
+  }),
 
   update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
         data: categoryUpdateSchema,
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const [category] = await db
@@ -63,11 +56,9 @@ export const categoriesRouter = router({
       return category
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await db.delete(categories).where(eq(categories.id, input.id))
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    await db.delete(categories).where(eq(categories.id, input.id))
 
-      return { success: true }
-    }),
+    return { success: true }
+  }),
 })

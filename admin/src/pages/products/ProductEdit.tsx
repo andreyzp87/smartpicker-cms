@@ -1,31 +1,31 @@
-import { useParams, useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { ProductForm } from '@/components/products/ProductForm';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useParams, useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { ProductForm } from '@/components/products/ProductForm'
+import { Card } from '@/components/ui/card'
+import { toast } from 'sonner'
 
 export function ProductEdit() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
 
   const { data: product, isLoading } = trpc.products.byId.useQuery({
     id: Number(id),
-  });
+  })
 
   const updateMutation = trpc.products.update.useMutation({
     onSuccess: () => {
-      utils.products.list.invalidate();
-      toast.success('Product updated successfully');
-      navigate('/products');
+      utils.products.list.invalidate()
+      toast.success('Product updated successfully')
+      navigate('/products')
     },
     onError: (error) => {
-      toast.error(`Failed to update product: ${error.message}`);
+      toast.error(`Failed to update product: ${error.message}`)
     },
-  });
+  })
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!product) return <div>Product not found</div>;
+  if (isLoading) return <div>Loading...</div>
+  if (!product) return <div>Product not found</div>
 
   return (
     <div>
@@ -39,5 +39,5 @@ export function ProductEdit() {
         />
       </Card>
     </div>
-  );
+  )
 }

@@ -1,48 +1,48 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
+import { ColumnDef } from '@tanstack/react-table'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
-import { trpc } from '@/lib/trpc';
-import { DataTable } from '@/components/ui/data-table';
-import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
+} from '@/components/ui/dropdown-menu'
+import { useDeleteConfirm } from '@/hooks/useDeleteConfirm'
+import { trpc } from '@/lib/trpc'
+import { DataTable } from '@/components/ui/data-table'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 type Hub = {
-  id: number;
-  name: string;
-  slug: string;
-  manufacturerId: number | null;
+  id: number
+  name: string
+  slug: string
+  manufacturerId: number | null
   manufacturer?: {
-    name: string;
-  } | null | any;
-  protocolsSupported: string[] | null;
-};
+    name: string
+  } | null
+  protocolsSupported: string[] | null
+}
 
 interface HubsTableProps {
-  hubs: Hub[];
+  hubs: Hub[]
 }
 
 export function HubsTable({ hubs }: HubsTableProps) {
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
-  const { confirm, Dialog } = useDeleteConfirm();
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
+  const { confirm, Dialog } = useDeleteConfirm()
 
   const deleteMutation = trpc.hubs.delete.useMutation({
     onSuccess: () => {
-      utils.hubs.list.invalidate();
-      toast.success('Hub deleted successfully');
+      utils.hubs.list.invalidate()
+      toast.success('Hub deleted successfully')
     },
     onError: (error) => {
-      toast.error(`Failed to delete hub: ${error.message}`);
+      toast.error(`Failed to delete hub: ${error.message}`)
     },
-  });
+  })
 
   const columns: ColumnDef<Hub>[] = [
     {
@@ -57,21 +57,21 @@ export function HubsTable({ hubs }: HubsTableProps) {
       accessorKey: 'manufacturer',
       header: 'Manufacturer',
       cell: ({ row }) => {
-        const manufacturer = row.original.manufacturer;
+        const manufacturer = row.original.manufacturer
         return manufacturer ? (
           <span>{manufacturer.name}</span>
         ) : (
           <span className="text-gray-400">—</span>
-        );
+        )
       },
     },
     {
       accessorKey: 'protocolsSupported',
       header: 'Protocols',
       cell: ({ row }) => {
-        const protocols = row.getValue('protocolsSupported') as string[] | null;
+        const protocols = row.getValue('protocolsSupported') as string[] | null
         if (!protocols || protocols.length === 0) {
-          return <span className="text-gray-400">—</span>;
+          return <span className="text-gray-400">—</span>
         }
         return (
           <div className="flex gap-1 flex-wrap">
@@ -81,13 +81,13 @@ export function HubsTable({ hubs }: HubsTableProps) {
               </Badge>
             ))}
           </div>
-        );
+        )
       },
     },
     {
       id: 'actions',
       cell: ({ row }) => {
-        const hub = row.original;
+        const hub = row.original
 
         return (
           <DropdownMenu>
@@ -110,15 +110,15 @@ export function HubsTable({ hubs }: HubsTableProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        );
+        )
       },
     },
-  ];
+  ]
 
   return (
     <>
       <DataTable<Hub, unknown> columns={columns} data={hubs} />
       <Dialog />
     </>
-  );
+  )
 }

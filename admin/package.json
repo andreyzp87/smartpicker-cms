@@ -4,8 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "lint": "pnpm --dir .. lint:admin",
+    "format": "pnpm --dir .. exec prettier --write admin/src admin/index.html admin/vite.config.ts admin/tsconfig.json admin/tsconfig.node.json",
+    "format:check": "pnpm --dir .. exec prettier --check admin/src admin/index.html admin/vite.config.ts admin/tsconfig.json admin/tsconfig.node.json",
+    "typecheck": "tsc --noEmit",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

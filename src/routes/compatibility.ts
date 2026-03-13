@@ -23,44 +23,40 @@ export const compatibilityRouter = router({
       return items
     }),
 
-  byHubId: protectedProcedure
-    .input(z.object({ hubId: z.number() }))
-    .query(async ({ input }) => {
-      const items = await db.query.deviceCompatibility.findMany({
-        where: eq(deviceCompatibility.hubId, input.hubId),
-        with: {
-          product: {
-            with: {
-              manufacturer: true,
-            },
+  byHubId: protectedProcedure.input(z.object({ hubId: z.number() })).query(async ({ input }) => {
+    const items = await db.query.deviceCompatibility.findMany({
+      where: eq(deviceCompatibility.hubId, input.hubId),
+      with: {
+        product: {
+          with: {
+            manufacturer: true,
           },
         },
+      },
+    })
+
+    return items
+  }),
+
+  create: protectedProcedure.input(compatibilityCreateSchema).mutation(async ({ input }) => {
+    const [compatibility] = await db
+      .insert(deviceCompatibility)
+      .values({
+        ...input,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       })
+      .returning()
 
-      return items
-    }),
-
-  create: protectedProcedure
-    .input(compatibilityCreateSchema)
-    .mutation(async ({ input }) => {
-      const [compatibility] = await db
-        .insert(deviceCompatibility)
-        .values({
-          ...input,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning()
-
-      return compatibility
-    }),
+    return compatibility
+  }),
 
   update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
         data: compatibilityUpdateSchema,
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const [compatibility] = await db
@@ -79,11 +75,9 @@ export const compatibilityRouter = router({
       return compatibility
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await db.delete(deviceCompatibility).where(eq(deviceCompatibility.id, input.id))
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    await db.delete(deviceCompatibility).where(eq(deviceCompatibility.id, input.id))
 
-      return { success: true }
-    }),
+    return { success: true }
+  }),
 })

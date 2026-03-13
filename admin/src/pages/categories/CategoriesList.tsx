@@ -1,13 +1,13 @@
-import { useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { CategoriesTable } from '@/components/categories/CategoriesTable';
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { CategoriesTable } from '@/components/categories/CategoriesTable'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 
 export function CategoriesList() {
-  const navigate = useNavigate();
-  const { data, isLoading } = trpc.categories.list.useQuery();
+  const navigate = useNavigate()
+  const { data, isLoading } = trpc.categories.list.useQuery()
 
   return (
     <div>
@@ -19,11 +19,7 @@ export function CategoriesList() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={10} />
-      ) : (
-        <CategoriesTable categories={data ?? []} />
-      )}
+      {isLoading ? <TableSkeleton rows={10} /> : <CategoriesTable categories={data ?? []} />}
     </div>
-  );
+  )
 }

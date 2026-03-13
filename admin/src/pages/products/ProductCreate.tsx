@@ -1,23 +1,23 @@
-import { useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { ProductForm } from '@/components/products/ProductForm';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { ProductForm } from '@/components/products/ProductForm'
+import { Card } from '@/components/ui/card'
+import { toast } from 'sonner'
 
 export function ProductCreate() {
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
 
   const createMutation = trpc.products.create.useMutation({
     onSuccess: () => {
-      utils.products.list.invalidate();
-      toast.success('Product created successfully');
-      navigate('/products');
+      utils.products.list.invalidate()
+      toast.success('Product created successfully')
+      navigate('/products')
     },
     onError: (error) => {
-      toast.error(`Failed to create product: ${error.message}`);
+      toast.error(`Failed to create product: ${error.message}`)
     },
-  });
+  })
 
   return (
     <div>
@@ -30,5 +30,5 @@ export function ProductCreate() {
         />
       </Card>
     </div>
-  );
+  )
 }

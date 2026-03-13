@@ -1,43 +1,43 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
+import { ColumnDef } from '@tanstack/react-table'
+import { Button } from '@/components/ui/button'
+import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
-import { trpc } from '@/lib/trpc';
-import { DataTable } from '@/components/ui/data-table';
-import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
+} from '@/components/ui/dropdown-menu'
+import { useDeleteConfirm } from '@/hooks/useDeleteConfirm'
+import { trpc } from '@/lib/trpc'
+import { DataTable } from '@/components/ui/data-table'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 type Manufacturer = {
-  id: number;
-  name: string;
-  slug: string;
-  website: string | null;
-};
+  id: number
+  name: string
+  slug: string
+  website: string | null
+}
 
 interface ManufacturersTableProps {
-  manufacturers: Manufacturer[];
+  manufacturers: Manufacturer[]
 }
 
 export function ManufacturersTable({ manufacturers }: ManufacturersTableProps) {
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
-  const { confirm, Dialog } = useDeleteConfirm();
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
+  const { confirm, Dialog } = useDeleteConfirm()
 
   const deleteMutation = trpc.manufacturers.delete.useMutation({
     onSuccess: () => {
-      utils.manufacturers.list.invalidate();
-      toast.success('Manufacturer deleted successfully');
+      utils.manufacturers.list.invalidate()
+      toast.success('Manufacturer deleted successfully')
     },
     onError: (error) => {
-      toast.error(`Failed to delete manufacturer: ${error.message}`);
+      toast.error(`Failed to delete manufacturer: ${error.message}`)
     },
-  });
+  })
 
   const columns: ColumnDef<Manufacturer>[] = [
     {
@@ -52,20 +52,25 @@ export function ManufacturersTable({ manufacturers }: ManufacturersTableProps) {
       accessorKey: 'website',
       header: 'Website',
       cell: ({ row }) => {
-        const website = row.getValue('website') as string | null;
+        const website = row.getValue('website') as string | null
         return website ? (
-          <a href={website} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:underline"
+          >
             {website}
           </a>
         ) : (
           <span className="text-gray-400">—</span>
-        );
+        )
       },
     },
     {
       id: 'actions',
       cell: ({ row }) => {
-        const manufacturer = row.original;
+        const manufacturer = row.original
 
         return (
           <DropdownMenu>
@@ -88,15 +93,15 @@ export function ManufacturersTable({ manufacturers }: ManufacturersTableProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        );
+        )
       },
     },
-  ];
+  ]
 
   return (
     <>
       <DataTable<Manufacturer, unknown> columns={columns} data={manufacturers} />
       <Dialog />
     </>
-  );
+  )
 }

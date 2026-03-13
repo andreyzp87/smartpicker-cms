@@ -12,7 +12,6 @@ import {
   authNameSchema,
   formatZodError,
   hashPassword,
-  normalizeEmail,
 } from './lib/auth'
 import { eq } from 'drizzle-orm'
 import { ZodError } from 'zod'
@@ -202,13 +201,14 @@ program
       console.log(`   Name: ${user.name}`)
       process.exit(0)
     } catch (error) {
+      let finalError: unknown = error
       try {
         handleCliValidationError(error)
       } catch (unexpectedError) {
-        error = unexpectedError
+        finalError = unexpectedError
       }
       console.error('❌ Failed to create user:')
-      console.error(error)
+      console.error(finalError)
       process.exit(1)
     }
   })
@@ -243,13 +243,14 @@ program
       console.log(`✅ Updated password for ${user.email}`)
       process.exit(0)
     } catch (error) {
+      let finalError: unknown = error
       try {
         handleCliValidationError(error)
       } catch (unexpectedError) {
-        error = unexpectedError
+        finalError = unexpectedError
       }
       console.error('❌ Failed to update password:')
-      console.error(error)
+      console.error(finalError)
       process.exit(1)
     }
   })
@@ -260,7 +261,7 @@ program
   .option(
     '-t, --type <type>',
     'Export type (products, manufacturers, categories, hubs, protocols, all)',
-    'all'
+    'all',
   )
   .action(async (options: { type: string }) => {
     try {

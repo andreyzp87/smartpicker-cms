@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-import { formatDistanceToNow } from 'date-fns';
-import { Loader2, Pencil, Plus, RefreshCcw, Shield } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useEffect, useMemo, useState } from 'react'
+import { formatDistanceToNow } from 'date-fns'
+import { Loader2, Pencil, Plus, RefreshCcw, Shield } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardAction,
@@ -10,7 +10,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from '@/components/ui/card';
+} from '@/components/ui/card'
 import {
   Dialog,
   DialogContent,
@@ -18,17 +18,17 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+} from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import {
   Table,
   TableBody,
@@ -36,59 +36,59 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
-import { trpc } from '@/lib/trpc';
-import { toast } from 'sonner';
+} from '@/components/ui/table'
+import { trpc } from '@/lib/trpc'
+import { toast } from 'sonner'
 
 type User = {
-  id: number;
-  email: string;
-  name: string;
-  isActive: boolean;
-  lastLoginAt: string | Date | null;
-  createdAt: string | Date;
-  updatedAt: string | Date;
-};
+  id: number
+  email: string
+  name: string
+  isActive: boolean
+  lastLoginAt: string | Date | null
+  createdAt: string | Date
+  updatedAt: string | Date
+}
 
 const emptyCreateForm = {
   name: '',
   email: '',
   password: '',
-};
+}
 
 function formatDate(value: unknown) {
   if (!value) {
-    return 'Never';
+    return 'Never'
   }
 
-  const date = value instanceof Date ? value : new Date(String(value));
+  const date = value instanceof Date ? value : new Date(String(value))
 
   if (Number.isNaN(date.getTime())) {
-    return 'Unknown';
+    return 'Unknown'
   }
 
-  return formatDistanceToNow(date, { addSuffix: true });
+  return formatDistanceToNow(date, { addSuffix: true })
 }
 
 export function UsersPanel() {
-  const utils = trpc.useUtils();
+  const utils = trpc.useUtils()
   const { data: authData } = trpc.auth.me.useQuery(undefined, {
     retry: false,
     staleTime: 60_000,
-  });
-  const { data: users = [], isLoading } = trpc.users.list.useQuery();
-  const [createOpen, setCreateOpen] = useState(false);
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [passwordUser, setPasswordUser] = useState<User | null>(null);
-  const [createForm, setCreateForm] = useState(emptyCreateForm);
+  })
+  const { data: users = [], isLoading } = trpc.users.list.useQuery()
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [passwordUser, setPasswordUser] = useState<User | null>(null)
+  const [createForm, setCreateForm] = useState(emptyCreateForm)
   const [editForm, setEditForm] = useState({
     name: '',
     email: '',
     isActive: 'active',
-  });
-  const [newPassword, setNewPassword] = useState('');
+  })
+  const [newPassword, setNewPassword] = useState('')
 
-  const currentUserId = authData?.user?.id ?? null;
+  const currentUserId = authData?.user?.id ?? null
 
   useEffect(() => {
     if (editingUser) {
@@ -96,75 +96,75 @@ export function UsersPanel() {
         name: editingUser.name,
         email: editingUser.email,
         isActive: editingUser.isActive ? 'active' : 'inactive',
-      });
+      })
     }
-  }, [editingUser]);
+  }, [editingUser])
 
   useEffect(() => {
     if (!createOpen) {
-      setCreateForm(emptyCreateForm);
+      setCreateForm(emptyCreateForm)
     }
-  }, [createOpen]);
+  }, [createOpen])
 
   useEffect(() => {
     if (!passwordUser) {
-      setNewPassword('');
+      setNewPassword('')
     }
-  }, [passwordUser]);
+  }, [passwordUser])
 
   const invalidateUsers = async () => {
-    await Promise.all([utils.users.list.invalidate(), utils.auth.me.invalidate()]);
-  };
+    await Promise.all([utils.users.list.invalidate(), utils.auth.me.invalidate()])
+  }
 
   const createMutation = trpc.users.create.useMutation({
     onSuccess: async () => {
-      toast.success('User created successfully');
-      setCreateOpen(false);
-      await invalidateUsers();
+      toast.success('User created successfully')
+      setCreateOpen(false)
+      await invalidateUsers()
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to create user');
+      toast.error(error.message || 'Failed to create user')
     },
-  });
+  })
 
   const updateMutation = trpc.users.update.useMutation({
     onSuccess: async (user) => {
-      toast.success(`${user.name} updated successfully`);
-      setEditingUser(null);
-      await invalidateUsers();
+      toast.success(`${user.name} updated successfully`)
+      setEditingUser(null)
+      await invalidateUsers()
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to update user');
+      toast.error(error.message || 'Failed to update user')
     },
-  });
+  })
 
   const setPasswordMutation = trpc.users.setPassword.useMutation({
     onSuccess: async (user) => {
-      toast.success(`Password reset for ${user.email}`);
-      setPasswordUser(null);
-      await invalidateUsers();
+      toast.success(`Password reset for ${user.email}`)
+      setPasswordUser(null)
+      await invalidateUsers()
     },
     onError: (error) => {
-      toast.error(error.message || 'Failed to reset password');
+      toast.error(error.message || 'Failed to reset password')
     },
-  });
+  })
 
   const pendingAction = useMemo(
     () => createMutation.isPending || updateMutation.isPending || setPasswordMutation.isPending,
     [createMutation.isPending, setPasswordMutation.isPending, updateMutation.isPending],
-  );
+  )
 
   const handleCreateUser = () => {
     createMutation.mutate({
       name: createForm.name,
       email: createForm.email,
       password: createForm.password,
-    });
-  };
+    })
+  }
 
   const handleUpdateUser = () => {
     if (!editingUser) {
-      return;
+      return
     }
 
     updateMutation.mutate({
@@ -174,19 +174,19 @@ export function UsersPanel() {
         email: editForm.email,
         isActive: editForm.isActive === 'active',
       },
-    });
-  };
+    })
+  }
 
   const handleResetPassword = () => {
     if (!passwordUser) {
-      return;
+      return
     }
 
     setPasswordMutation.mutate({
       id: passwordUser.id,
       password: newPassword,
-    });
-  };
+    })
+  }
 
   return (
     <>
@@ -251,7 +251,9 @@ export function UsersPanel() {
                             {user.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-gray-600">{formatDate(user.lastLoginAt)}</TableCell>
+                        <TableCell className="text-gray-600">
+                          {formatDate(user.lastLoginAt)}
+                        </TableCell>
                         <TableCell>
                           <div className="flex justify-end gap-2">
                             <Button
@@ -396,7 +398,9 @@ export function UsersPanel() {
               <Label>Status</Label>
               <Select
                 value={editForm.isActive}
-                onValueChange={(value) => setEditForm((current) => ({ ...current, isActive: value }))}
+                onValueChange={(value) =>
+                  setEditForm((current) => ({ ...current, isActive: value }))
+                }
                 disabled={pendingAction || editingUser?.id === currentUserId}
               >
                 <SelectTrigger className="w-full">
@@ -408,7 +412,9 @@ export function UsersPanel() {
                 </SelectContent>
               </Select>
               {editingUser?.id === currentUserId ? (
-                <p className="text-sm text-gray-500">Your own account stays active from this screen.</p>
+                <p className="text-sm text-gray-500">
+                  Your own account stays active from this screen.
+                </p>
               ) : null}
             </div>
           </div>
@@ -418,7 +424,11 @@ export function UsersPanel() {
             </Button>
             <Button
               onClick={handleUpdateUser}
-              disabled={pendingAction || editForm.name.trim().length === 0 || editForm.email.trim().length === 0}
+              disabled={
+                pendingAction ||
+                editForm.name.trim().length === 0 ||
+                editForm.email.trim().length === 0
+              }
             >
               {updateMutation.isPending ? (
                 <>
@@ -454,10 +464,17 @@ export function UsersPanel() {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPasswordUser(null)} disabled={pendingAction}>
+            <Button
+              variant="outline"
+              onClick={() => setPasswordUser(null)}
+              disabled={pendingAction}
+            >
               Cancel
             </Button>
-            <Button onClick={handleResetPassword} disabled={pendingAction || newPassword.length < 8}>
+            <Button
+              onClick={handleResetPassword}
+              disabled={pendingAction || newPassword.length < 8}
+            >
               {setPasswordMutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -471,5 +488,5 @@ export function UsersPanel() {
         </DialogContent>
       </Dialog>
     </>
-  );
+  )
 }

@@ -8,7 +8,8 @@ import {
   zwaveDetails,
 } from '../db/schema'
 import { eq } from 'drizzle-orm'
-import { findDuplicates, DuplicateGroup } from './finder'
+import { logger } from '../lib/logger'
+import { findDuplicates } from './finder'
 import { pickCanonicalProduct, getDuplicates, determinePrimarySource } from './picker'
 
 export interface DeduplicationResult {
@@ -34,7 +35,7 @@ export async function deduplicateProducts(
   const duplicateGroups = await findDuplicates()
 
   if (verbose) {
-    console.log(`\nFound ${duplicateGroups.length} duplicate groups`)
+    logger.info({ duplicateGroups: duplicateGroups.length }, 'Found duplicate groups')
   }
 
   let productsKept = 0
@@ -46,9 +47,19 @@ export async function deduplicateProducts(
     const duplicates = getDuplicates(canonical, group.products)
 
     if (verbose) {
-      console.log(`\n  Group: ${canonical.manufacturerName} ${canonical.model}`)
-      console.log(`    Canonical: Product #${canonical.id} (${canonical.source})`)
-      console.log(`    Duplicates: ${duplicates.map((p) => `#${p.id} (${p.source})`).join(', ')}`)
+      logger.info(
+        {
+          canonicalId: canonical.id,
+          canonicalSource: canonical.source,
+          duplicates: duplicates.map((product) => ({
+            id: product.id,
+            source: product.source,
+          })),
+          manufacturer: canonical.manufacturerName,
+          model: canonical.model,
+        },
+        'Processing duplicate group',
+      )
     }
 
     if (dryRun) {

@@ -1,13 +1,13 @@
-import { useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { HubsTable } from '@/components/hubs/HubsTable';
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { HubsTable } from '@/components/hubs/HubsTable'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 
 export function HubsList() {
-  const navigate = useNavigate();
-  const { data, isLoading } = trpc.hubs.list.useQuery();
+  const navigate = useNavigate()
+  const { data, isLoading } = trpc.hubs.list.useQuery()
 
   return (
     <div>
@@ -19,11 +19,7 @@ export function HubsList() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={10} />
-      ) : (
-        <HubsTable hubs={data ?? []} />
-      )}
+      {isLoading ? <TableSkeleton rows={10} /> : <HubsTable hubs={data ?? []} />}
     </div>
-  );
+  )
 }

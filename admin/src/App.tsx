@@ -1,36 +1,39 @@
-import { useState } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { trpc, trpcClient } from './lib/trpc';
-import { AppLayout } from './components/layout/AppLayout';
-import { RedirectIfAuthenticated, RequireAuth } from './components/auth/AuthGuard';
-import { Dashboard } from './pages/Dashboard';
-import { ProductsList } from './pages/products/ProductsList';
-import { ProductCreate } from './pages/products/ProductCreate';
-import { ProductEdit } from './pages/products/ProductEdit';
-import { ManufacturersList } from './pages/manufacturers/ManufacturersList';
-import { ManufacturerCreate } from './pages/manufacturers/ManufacturerCreate';
-import { ManufacturerEdit } from './pages/manufacturers/ManufacturerEdit';
-import { CategoriesList } from './pages/categories/CategoriesList';
-import { CategoryCreate } from './pages/categories/CategoryCreate';
-import { CategoryEdit } from './pages/categories/CategoryEdit';
-import { HubsList } from './pages/hubs/HubsList';
-import { HubCreate } from './pages/hubs/HubCreate';
-import { HubEdit } from './pages/hubs/HubEdit';
-import { ImportsList } from './pages/imports/ImportsList';
-import { Settings } from './pages/Settings';
-import { Login } from './pages/Login';
-import { Toaster } from 'sonner';
+import { useState } from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { trpc, trpcClient } from './lib/trpc'
+import { AppLayout } from './components/layout/AppLayout'
+import { RedirectIfAuthenticated, RequireAuth } from './components/auth/AuthGuard'
+import { Dashboard } from './pages/Dashboard'
+import { ProductsList } from './pages/products/ProductsList'
+import { ProductCreate } from './pages/products/ProductCreate'
+import { ProductEdit } from './pages/products/ProductEdit'
+import { ManufacturersList } from './pages/manufacturers/ManufacturersList'
+import { ManufacturerCreate } from './pages/manufacturers/ManufacturerCreate'
+import { ManufacturerEdit } from './pages/manufacturers/ManufacturerEdit'
+import { CategoriesList } from './pages/categories/CategoriesList'
+import { CategoryCreate } from './pages/categories/CategoryCreate'
+import { CategoryEdit } from './pages/categories/CategoryEdit'
+import { HubsList } from './pages/hubs/HubsList'
+import { HubCreate } from './pages/hubs/HubCreate'
+import { HubEdit } from './pages/hubs/HubEdit'
+import { ImportsList } from './pages/imports/ImportsList'
+import { Settings } from './pages/Settings'
+import { Login } from './pages/Login'
+import { Toaster } from 'sonner'
 
 function App() {
-  const [queryClient] = useState(() => new QueryClient({
-    defaultOptions: {
-      queries: {
-        staleTime: 5000,
-        retry: 1,
-      },
-    },
-  }));
+  const [queryClient] = useState(
+    () =>
+      new QueryClient({
+        defaultOptions: {
+          queries: {
+            staleTime: 5000,
+            retry: 1,
+          },
+        },
+      }),
+  )
 
   return (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -64,7 +67,7 @@ function App() {
         </BrowserRouter>
       </QueryClientProvider>
     </trpc.Provider>
-  );
+  )
 }
 
 export default App

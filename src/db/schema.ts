@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   pgTable,
   pgEnum,
   serial,
@@ -88,7 +89,7 @@ export const categories = pgTable('categories', {
   id: serial('id').primaryKey(),
   slug: varchar('slug', { length: 255 }).unique().notNull(),
   name: varchar('name', { length: 255 }).notNull(),
-  parentId: integer('parent_id').references((): any => categories.id),
+  parentId: integer('parent_id').references((): AnyPgColumn => categories.id),
   sortOrder: integer('sort_order').default(0).notNull(),
 })
 
@@ -101,7 +102,7 @@ export const hubs = pgTable('hubs', {
   description: text('description'),
 })
 
-export const rawImports: any = pgTable(
+export const rawImports = pgTable(
   'raw_imports',
   {
     id: serial('id').primaryKey(),
@@ -109,7 +110,7 @@ export const rawImports: any = pgTable(
     sourceId: varchar('source_id', { length: 255 }).notNull(),
     data: jsonb('data').notNull(),
     checksum: varchar('checksum', { length: 64 }),
-    productId: integer('product_id').references((): any => products.id),
+    productId: integer('product_id').references((): AnyPgColumn => products.id),
     importedAt: timestamp('imported_at').defaultNow().notNull(),
     processedAt: timestamp('processed_at'),
   },
@@ -120,7 +121,7 @@ export const rawImports: any = pgTable(
   }),
 )
 
-export const products: any = pgTable(
+export const products = pgTable(
   'products',
   {
     id: serial('id').primaryKey(),
@@ -136,7 +137,7 @@ export const products: any = pgTable(
     matterCertified: boolean('matter_certified'),
     imageUrl: text('image_url'),
     description: text('description'),
-    primarySourceId: integer('primary_source_id').references((): any => rawImports.id),
+    primarySourceId: integer('primary_source_id').references((): AnyPgColumn => rawImports.id),
     manualOverrides: jsonb('manual_overrides').$type<Record<string, boolean>>().default({}),
     status: productStatusEnum('status').default('draft').notNull(),
     createdAt: timestamp('created_at').defaultNow().notNull(),

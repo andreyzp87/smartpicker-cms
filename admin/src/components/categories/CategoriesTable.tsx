@@ -1,47 +1,47 @@
-import { ColumnDef } from '@tanstack/react-table';
-import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Pencil, Trash } from 'lucide-react';
+import { ColumnDef } from '@tanstack/react-table'
+import { Button } from '@/components/ui/button'
+import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { useDeleteConfirm } from '@/hooks/useDeleteConfirm';
-import { trpc } from '@/lib/trpc';
-import { DataTable } from '@/components/ui/data-table';
-import { useNavigate } from 'react-router';
-import { toast } from 'sonner';
+} from '@/components/ui/dropdown-menu'
+import { useDeleteConfirm } from '@/hooks/useDeleteConfirm'
+import { trpc } from '@/lib/trpc'
+import { DataTable } from '@/components/ui/data-table'
+import { useNavigate } from 'react-router'
+import { toast } from 'sonner'
 
 type Category = {
-  id: number;
-  name: string;
-  slug: string;
-  sortOrder: number;
-  parentId: number | null;
+  id: number
+  name: string
+  slug: string
+  sortOrder: number
+  parentId: number | null
   parent?: {
-    name: string;
-  } | null | any;
-};
+    name: string
+  } | null
+}
 
 interface CategoriesTableProps {
-  categories: Category[];
+  categories: Category[]
 }
 
 export function CategoriesTable({ categories }: CategoriesTableProps) {
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
-  const { confirm, Dialog } = useDeleteConfirm();
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
+  const { confirm, Dialog } = useDeleteConfirm()
 
   const deleteMutation = trpc.categories.delete.useMutation({
     onSuccess: () => {
-      utils.categories.list.invalidate();
-      toast.success('Category deleted successfully');
+      utils.categories.list.invalidate()
+      toast.success('Category deleted successfully')
     },
     onError: (error) => {
-      toast.error(`Failed to delete category: ${error.message}`);
+      toast.error(`Failed to delete category: ${error.message}`)
     },
-  });
+  })
 
   const columns: ColumnDef<Category>[] = [
     {
@@ -56,12 +56,8 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
       accessorKey: 'parent',
       header: 'Parent Category',
       cell: ({ row }) => {
-        const parent = row.original.parent;
-        return parent ? (
-          <span>{parent.name}</span>
-        ) : (
-          <span className="text-gray-400">—</span>
-        );
+        const parent = row.original.parent
+        return parent ? <span>{parent.name}</span> : <span className="text-gray-400">—</span>
       },
     },
     {
@@ -71,7 +67,7 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
     {
       id: 'actions',
       cell: ({ row }) => {
-        const category = row.original;
+        const category = row.original
 
         return (
           <DropdownMenu>
@@ -94,15 +90,15 @@ export function CategoriesTable({ categories }: CategoriesTableProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        );
+        )
       },
     },
-  ];
+  ]
 
   return (
     <>
       <DataTable<Category, unknown> columns={columns} data={categories} />
       <Dialog />
     </>
-  );
+  )
 }

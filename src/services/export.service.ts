@@ -50,13 +50,7 @@ const PROTOCOL_DEFINITIONS = [
 ] as const
 
 type ProtocolSlug = (typeof PROTOCOL_DEFINITIONS)[number]['slug']
-type SitemapPageType =
-  | 'static'
-  | 'device'
-  | 'hub'
-  | 'manufacturer'
-  | 'category'
-  | 'protocol'
+type SitemapPageType = 'static' | 'device' | 'hub' | 'manufacturer' | 'category' | 'protocol'
 
 interface ExportEntityRef {
   id: number
@@ -346,7 +340,9 @@ export class ExportService {
     logger.info('Starting products export generation')
     const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot(true))
 
-    await this.deleteStaleJsonFiles('products', resolvedSnapshot.productDetailKeys, ['products/slugs.json'])
+    await this.deleteStaleJsonFiles('products', resolvedSnapshot.productDetailKeys, [
+      'products/slugs.json',
+    ])
 
     await this.storage.write('products/slugs.json', {
       generated: resolvedSnapshot.generated,
@@ -365,7 +361,7 @@ export class ExportService {
     })
 
     logger.info(
-      `Products export complete: ${resolvedSnapshot.productSummaries.length} products exported to ${url}`
+      `Products export complete: ${resolvedSnapshot.productSummaries.length} products exported to ${url}`,
     )
 
     return { url, count: resolvedSnapshot.productSummaries.length }
@@ -375,7 +371,7 @@ export class ExportService {
     logger.info('Starting manufacturers export generation')
     const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
     const detailKeys = new Set(
-      resolvedSnapshot.manufacturerSlugs.map((slug) => `manufacturers/${slug}.json`)
+      resolvedSnapshot.manufacturerSlugs.map((slug) => `manufacturers/${slug}.json`),
     )
 
     await this.deleteStaleJsonFiles('manufacturers', detailKeys, ['manufacturers/slugs.json'])
@@ -403,7 +399,7 @@ export class ExportService {
     })
 
     logger.info(
-      `Manufacturers export complete: ${resolvedSnapshot.manufacturerSummaries.length} manufacturers exported to ${url}`
+      `Manufacturers export complete: ${resolvedSnapshot.manufacturerSummaries.length} manufacturers exported to ${url}`,
     )
 
     return { url, count: resolvedSnapshot.manufacturerSummaries.length }
@@ -440,7 +436,7 @@ export class ExportService {
     })
 
     logger.info(
-      `Categories export complete: ${resolvedSnapshot.categorySummaries.length} categories exported to ${url}`
+      `Categories export complete: ${resolvedSnapshot.categorySummaries.length} categories exported to ${url}`,
     )
 
     return { url, count: resolvedSnapshot.categorySummaries.length }
@@ -475,7 +471,9 @@ export class ExportService {
       hubs: resolvedSnapshot.hubSummaries,
     })
 
-    logger.info(`Hubs export complete: ${resolvedSnapshot.hubSummaries.length} hubs exported to ${url}`)
+    logger.info(
+      `Hubs export complete: ${resolvedSnapshot.hubSummaries.length} hubs exported to ${url}`,
+    )
 
     return { url, count: resolvedSnapshot.hubSummaries.length }
   }
@@ -483,7 +481,9 @@ export class ExportService {
   async generateProtocolsExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
     logger.info('Starting protocols export generation')
     const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
-    const detailKeys = new Set(resolvedSnapshot.protocolSlugs.map((slug) => `protocols/${slug}.json`))
+    const detailKeys = new Set(
+      resolvedSnapshot.protocolSlugs.map((slug) => `protocols/${slug}.json`),
+    )
 
     await this.deleteStaleJsonFiles('protocols', detailKeys, ['protocols/slugs.json'])
 
@@ -510,7 +510,7 @@ export class ExportService {
     })
 
     logger.info(
-      `Protocols export complete: ${resolvedSnapshot.protocolSummaries.length} protocols exported to ${url}`
+      `Protocols export complete: ${resolvedSnapshot.protocolSummaries.length} protocols exported to ${url}`,
     )
 
     return { url, count: resolvedSnapshot.protocolSummaries.length }
@@ -549,16 +549,23 @@ export class ExportService {
     logger.info('Starting full export generation')
     const snapshot = await this.buildExportSnapshot(true)
 
-    const [productsResult, manufacturersResult, categoriesResult, hubsResult, protocolsResult, siteResult, sitemapResult] =
-      await Promise.all([
-        this.generateProductsExport(snapshot),
-        this.generateManufacturersExport(snapshot),
-        this.generateCategoriesExport(snapshot),
-        this.generateHubsExport(snapshot),
-        this.generateProtocolsExport(snapshot),
-        this.generateSiteExport(snapshot),
-        this.generateSitemapExport(snapshot),
-      ])
+    const [
+      productsResult,
+      manufacturersResult,
+      categoriesResult,
+      hubsResult,
+      protocolsResult,
+      siteResult,
+      sitemapResult,
+    ] = await Promise.all([
+      this.generateProductsExport(snapshot),
+      this.generateManufacturersExport(snapshot),
+      this.generateCategoriesExport(snapshot),
+      this.generateHubsExport(snapshot),
+      this.generateProtocolsExport(snapshot),
+      this.generateSiteExport(snapshot),
+      this.generateSitemapExport(snapshot),
+    ])
 
     await this.triggerDeployHook()
 
@@ -613,7 +620,7 @@ export class ExportService {
           deviceSlugs: [],
           latestUpdatedAt: null,
         },
-      ])
+      ]),
     )
     const hubAggregates = new Map<string, HubAggregate>(
       hubs.map((hub) => [
@@ -630,7 +637,7 @@ export class ExportService {
           statusCounts: {},
           protocolCounts: {},
         },
-      ])
+      ]),
     )
     const categoryAggregates = new Map<string, CategoryAggregate>(
       Array.from(categoryMetadataById.values()).map((category) => [
@@ -641,7 +648,7 @@ export class ExportService {
           deviceSlugs: [],
           latestUpdatedAt: null,
         },
-      ])
+      ]),
     )
     const protocolAggregates = new Map<ProtocolSlug, ProtocolAggregate>(
       PROTOCOL_DEFINITIONS.map((protocol) => [
@@ -654,7 +661,7 @@ export class ExportService {
           cloudDependentCount: 0,
           matterCertifiedCount: 0,
         },
-      ])
+      ]),
     )
 
     const productSummaries: ProductExportSummary[] = []
@@ -665,7 +672,6 @@ export class ExportService {
     let lastProductId = 0
 
     while (true) {
-      /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
       const batch = (await db.query.products.findMany({
         where: and(eq(products.status, 'published'), gt(products.id, lastProductId)),
         with: {
@@ -682,7 +688,6 @@ export class ExportService {
         orderBy: (products, { asc }) => [asc(products.id)],
         limit: PRODUCT_EXPORT_BATCH_SIZE,
       })) as PublishedProductRecord[]
-      /* eslint-enable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 
       if (batch.length === 0) {
         break
@@ -690,7 +695,7 @@ export class ExportService {
 
       for (const product of batch) {
         const categoryMetadata = product.category
-          ? categoryMetadataById.get(product.category.id) ?? null
+          ? (categoryMetadataById.get(product.category.id) ?? null)
           : null
         const compatibilitySummary = this.buildCompatibilitySummary(product.compatibility)
         const summary = this.toProductSummary(product, categoryMetadata, compatibilitySummary)
@@ -721,7 +726,12 @@ export class ExportService {
         }
 
         if (categoryMetadata) {
-          this.assignProductToCategory(categoryMetadata.path, product.slug, updatedAt, categoryAggregates)
+          this.assignProductToCategory(
+            categoryMetadata.path,
+            product.slug,
+            updatedAt,
+            categoryAggregates,
+          )
 
           for (const ancestor of categoryMetadata.ancestors) {
             const ancestorMetadata = categoryMetadataById.get(ancestor.id)
@@ -731,7 +741,7 @@ export class ExportService {
                 product.slug,
                 updatedAt,
                 categoryAggregates,
-                false
+                false,
               )
             }
           }
@@ -776,13 +786,13 @@ export class ExportService {
 
       lastProductId = batch[batch.length - 1].id
       logger.info(
-        `Prepared ${productSummaries.length} product exports so far (last product id: ${lastProductId})`
+        `Prepared ${productSummaries.length} product exports so far (last product id: ${lastProductId})`,
       )
     }
 
     const sortSlugsByName = (slugs: string[]) =>
       Array.from(new Set(slugs)).sort((left, right) =>
-        (productNameBySlug.get(left) ?? left).localeCompare(productNameBySlug.get(right) ?? right)
+        (productNameBySlug.get(left) ?? left).localeCompare(productNameBySlug.get(right) ?? right),
       )
 
     productSummaries.sort((left, right) => left.name.localeCompare(right.name))
@@ -804,7 +814,7 @@ export class ExportService {
       .sort((left, right) => left.name.localeCompare(right.name))
 
     const manufacturerSummaries: ManufacturerExportSummary[] = manufacturerDetails.map(
-      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...manufacturer }) => manufacturer
+      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...manufacturer }) => manufacturer,
     )
     const manufacturerSlugs = manufacturerDetails.map((manufacturer) => manufacturer.slug)
 
@@ -826,7 +836,7 @@ export class ExportService {
       .sort((left, right) => left.name.localeCompare(right.name))
 
     const hubSummaries: HubExportSummary[] = hubDetails.map(
-      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...hub }) => hub
+      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...hub }) => hub,
     )
     const hubSlugs = hubDetails.map((hub) => hub.slug)
 
@@ -851,18 +861,24 @@ export class ExportService {
       .sort((left, right) => left.path.localeCompare(right.path))
 
     const categorySummaries: CategoryExportSummary[] = categoryDetails.map(
-      ({ updatedAt: _updatedAt, directDeviceSlugs: _directDeviceSlugs, deviceSlugs: _deviceSlugs, ...category }) =>
-        category
+      ({
+        updatedAt: _updatedAt,
+        directDeviceSlugs: _directDeviceSlugs,
+        deviceSlugs: _deviceSlugs,
+        ...category
+      }) => category,
     )
     const categoryPaths = categoryDetails.map((category) => ({
       slug: category.slug,
       path: category.path,
       pathSegments: category.pathSegments,
     }))
-    const categoryDetailKeys = new Set(categoryDetails.map((category) => `categories/${category.path}.json`))
+    const categoryDetailKeys = new Set(
+      categoryDetails.map((category) => `categories/${category.path}.json`),
+    )
 
-    const protocolDetails = Array.from(protocolAggregates.values())
-      .map<ProtocolExportDetail>((protocol) => ({
+    const protocolDetails = Array.from(protocolAggregates.values()).map<ProtocolExportDetail>(
+      (protocol) => ({
         slug: protocol.slug,
         name: protocol.name,
         title: protocol.title,
@@ -873,17 +889,20 @@ export class ExportService {
         matterCertifiedCount: protocol.matterCertifiedCount,
         updatedAt: protocol.latestUpdatedAt?.toISOString() ?? null,
         deviceSlugs: sortSlugsByName(protocol.deviceSlugs),
-      }))
+      }),
+    )
 
     const protocolSummaries: ProtocolExportSummary[] = protocolDetails.map(
-      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...protocol }) => protocol
+      ({ updatedAt: _updatedAt, deviceSlugs: _deviceSlugs, ...protocol }) => protocol,
     )
     const protocolSlugs = protocolDetails.map((protocol) => protocol.slug)
     const protocolCounts = this.sortRecord(
-      Object.fromEntries(protocolDetails.map((protocol) => [protocol.slug, protocol.deviceCount]))
+      Object.fromEntries(protocolDetails.map((protocol) => [protocol.slug, protocol.deviceCount])),
     ) as Partial<Record<ProtocolSlug, number>>
 
-    const featuredDeviceSlugs = recentProducts.slice(0, FEATURED_DEVICE_COUNT).map((item) => item.slug)
+    const featuredDeviceSlugs = recentProducts
+      .slice(0, FEATURED_DEVICE_COUNT)
+      .map((item) => item.slug)
     const recentlyUpdatedDeviceSlugs = recentProducts
       .slice(0, RECENT_DEVICE_COUNT)
       .map((item) => item.slug)
@@ -1000,7 +1019,7 @@ export class ExportService {
         return existing
       }
 
-      const parent = category.parentId ? categoryById.get(category.parentId) ?? null : null
+      const parent = category.parentId ? (categoryById.get(category.parentId) ?? null) : null
       const parentMetadata = parent ? buildMetadata(parent) : null
       const pathSegments = parentMetadata
         ? [...parentMetadata.pathSegments, category.slug]
@@ -1011,7 +1030,7 @@ export class ExportService {
         .sort((left, right) =>
           left.sortOrder === right.sortOrder
             ? left.name.localeCompare(right.name)
-            : left.sortOrder - right.sortOrder
+            : left.sortOrder - right.sortOrder,
         )
         .map((child) => ({
           id: child.id,
@@ -1028,7 +1047,10 @@ export class ExportService {
         path,
         pathSegments,
         ancestors: parentMetadata
-          ? [...parentMetadata.ancestors, { id: parentMetadata.id, slug: parentMetadata.slug, name: parentMetadata.name }]
+          ? [
+              ...parentMetadata.ancestors,
+              { id: parentMetadata.id, slug: parentMetadata.slug, name: parentMetadata.name },
+            ]
           : [],
         children,
         sortOrder: category.sortOrder,
@@ -1050,7 +1072,7 @@ export class ExportService {
     productSlug: string,
     updatedAt: Date,
     categoryAggregates: Map<string, CategoryAggregate>,
-    isDirect = true
+    isDirect = true,
   ): void {
     const category = categoryAggregates.get(categoryPath)
     if (!category) {
@@ -1089,7 +1111,7 @@ export class ExportService {
     return {
       compatibleHubSlugs: Array.from(byHub.keys()).sort((left, right) => left.localeCompare(right)),
       compatibilityStatuses: Array.from(new Set(byHub.values())).sort((left, right) =>
-        left.localeCompare(right)
+        left.localeCompare(right),
       ),
       byHub,
     }
@@ -1101,7 +1123,7 @@ export class ExportService {
     compatibilitySummary: {
       compatibleHubSlugs: string[]
       compatibilityStatuses: string[]
-    }
+    },
   ): ProductExportSummary {
     const searchText = this.buildSearchText([
       product.name,
@@ -1134,7 +1156,10 @@ export class ExportService {
     }
   }
 
-  private toProductDetail(product: PublishedProductRecord, summary: ProductExportSummary): ProductExport {
+  private toProductDetail(
+    product: PublishedProductRecord,
+    summary: ProductExportSummary,
+  ): ProductExport {
     return {
       ...summary,
       description: product.description,
@@ -1171,12 +1196,11 @@ export class ExportService {
   private async deleteStaleJsonFiles(
     prefix: string,
     activeKeys: Set<string>,
-    preserveKeys: string[] = []
+    preserveKeys: string[] = [],
   ): Promise<void> {
     const existingFiles = await this.storage.list(prefix)
     const staleFiles = existingFiles.filter(
-      (file) =>
-        file.endsWith('.json') && !preserveKeys.includes(file) && !activeKeys.has(file)
+      (file) => file.endsWith('.json') && !preserveKeys.includes(file) && !activeKeys.has(file),
     )
 
     if (staleFiles.length === 0) {
@@ -1192,8 +1216,8 @@ export class ExportService {
       new Set(
         parts
           .filter((part): part is string => Boolean(part?.trim()))
-          .map((part) => part.trim().toLowerCase())
-      )
+          .map((part) => part.trim().toLowerCase()),
+      ),
     ).join(' ')
   }
 
@@ -1225,10 +1249,10 @@ export class ExportService {
   }
 
   private sortRecord<T extends string>(
-    record: Partial<Record<T, number>> | Record<string, number>
+    record: Partial<Record<T, number>> | Record<string, number>,
   ): Record<string, number> {
     return Object.fromEntries(
-      Object.entries(record).sort(([left], [right]) => left.localeCompare(right))
+      Object.entries(record).sort(([left], [right]) => left.localeCompare(right)),
     )
   }
 

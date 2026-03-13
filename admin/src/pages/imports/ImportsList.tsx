@@ -1,42 +1,82 @@
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
-import { columns } from '@/components/imports/ImportsTable';
-import { DataTable } from '@/components/ui/data-table';
-import { useState } from 'react';
+import { trpc } from '@/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { RefreshCw } from 'lucide-react'
+import { columns } from '@/components/imports/ImportsTable'
+import { DataTable } from '@/components/ui/data-table'
+import { useState } from 'react'
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+} from '@/components/ui/select'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
+import { type ImportSource } from '@/shared/schemas'
 
 type RawImport = {
-  id: number;
-  source: 'zigbee2mqtt' | 'blakadder' | 'zwave-js';
-  sourceId: string;
-  importedAt: Date;
-  processedAt: Date | null;
-};
+  id: number
+  source: 'zigbee2mqtt' | 'blakadder' | 'zwave-js'
+  sourceId: string
+  importedAt: string
+  processedAt: string | null
+}
+
+type SourceFilter = ImportSource | 'all'
+type ProcessedFilter = 'all' | 'true' | 'false'
+
+function isImportSource(value: string): value is ImportSource {
+  return value === 'zigbee2mqtt' || value === 'blakadder' || value === 'zwave-js'
+}
 
 export function ImportsList() {
-  const [source, setSource] = useState<string>('all');
-  const [processed, setProcessed] = useState<string>('all');
+  const [source, setSource] = useState<SourceFilter>('all')
+  const [processed, setProcessed] = useState<ProcessedFilter>('all')
 
   const { data, isLoading, refetch } = trpc.imports.list.useQuery({
-    source: source === 'all' ? undefined : source as any,
+    source: source === 'all' ? undefined : source,
     processed: processed === 'all' ? undefined : processed === 'true',
     limit: 100,
     offset: 0,
-  });
+  })
+
+  const handleSourceChange = (value: string) => {
+    if (
+      value === 'all' ||
+      value === 'zigbee2mqtt' ||
+      value === 'blakadder' ||
+      value === 'zwave-js'
+    ) {
+      setSource(value)
+    }
+  }
+
+  const handleProcessedChange = (value: string) => {
+    if (value === 'all' || value === 'true' || value === 'false') {
+      setProcessed(value)
+    }
+  }
+
+  const importRows: RawImport[] =
+    data?.items.flatMap((item) =>
+      isImportSource(item.source)
+        ? [
+            {
+              id: item.id,
+              source: item.source,
+              sourceId: item.sourceId,
+              importedAt: item.importedAt,
+              processedAt: item.processedAt,
+            },
+          ]
+        : [],
+    ) ?? []
 
   const triggerMutation = trpc.imports.trigger.useMutation({
     onSuccess: () => {
-      refetch();
+      refetch()
     },
-  });
+  })
 
   return (
     <div>
@@ -44,7 +84,7 @@ export function ImportsList() {
         <h1 className="text-3xl font-bold text-gray-900">Data Imports</h1>
 
         <div className="flex gap-2">
-          <Select value={source} onValueChange={setSource}>
+          <Select value={source} onValueChange={handleSourceChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Source" />
             </SelectTrigger>
@@ -56,7 +96,7 @@ export function ImportsList() {
             </SelectContent>
           </Select>
 
-          <Select value={processed} onValueChange={setProcessed}>
+          <Select value={processed} onValueChange={handleProcessedChange}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -77,8 +117,8 @@ export function ImportsList() {
       {isLoading ? (
         <TableSkeleton rows={10} />
       ) : (
-        <DataTable<RawImport, unknown> columns={columns} data={(data?.items ?? []) as RawImport[]} />
+        <DataTable<RawImport, unknown> columns={columns} data={importRows} />
       )}
     </div>
-  );
+  )
 }

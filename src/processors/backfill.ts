@@ -2,6 +2,20 @@ import { db } from '../db/client'
 import { products, rawImports } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { createCompatibilityRecords } from './compatibility'
+import { logger } from '../lib/logger'
+
+function getCompatibilityCodes(value: unknown): string[] {
+  if (
+    typeof value === 'object' &&
+    value !== null &&
+    'compatible' in value &&
+    Array.isArray(value.compatible)
+  ) {
+    return value.compatible.filter((item): item is string => typeof item === 'string')
+  }
+
+  return []
+}
 
 /**
  * Backfill compatibility records for products from Blakadder source
@@ -23,9 +37,9 @@ export async function backfillCompatibility(): Promise<{ processed: number; crea
   let totalCreated = 0
 
   for (const product of blakadderProducts) {
-    const compatible = product.compatible?.compatible as string[] | undefined
+    const compatible = getCompatibilityCodes(product.compatible)
 
-    if (compatible && compatible.length > 0) {
+    if (compatible.length > 0) {
       const created = await createCompatibilityRecords(product.productId, compatible)
       totalCreated += created
     }
@@ -33,7 +47,7 @@ export async function backfillCompatibility(): Promise<{ processed: number; crea
     processed++
 
     if (processed % 100 === 0) {
-      console.log(`   Processed ${processed}/${blakadderProducts.length} products...`)
+      logger.info({ processed, total: blakadderProducts.length }, 'Backfill progress')
     }
   }
 

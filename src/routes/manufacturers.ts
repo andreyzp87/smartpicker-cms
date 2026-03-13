@@ -9,42 +9,38 @@ export const manufacturersRouter = router({
   list: protectedProcedure.query(async () => {
     const items = await db.query.manufacturers.findMany({
       orderBy: asc(manufacturers.name),
-    });
+    })
 
-    return items;
+    return items
   }),
 
-  byId: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      const manufacturer = await db.query.manufacturers.findFirst({
-        where: eq(manufacturers.id, input.id),
-      });
+  byId: protectedProcedure.input(z.object({ id: z.number() })).query(async ({ input }) => {
+    const manufacturer = await db.query.manufacturers.findFirst({
+      where: eq(manufacturers.id, input.id),
+    })
 
-      return manufacturer ?? null;
-    }),
+    return manufacturer ?? null
+  }),
 
-  create: protectedProcedure
-    .input(manufacturerCreateSchema)
-    .mutation(async ({ input }) => {
-      const [manufacturer] = await db
-        .insert(manufacturers)
-        .values({
-          ...input,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        })
-        .returning();
+  create: protectedProcedure.input(manufacturerCreateSchema).mutation(async ({ input }) => {
+    const [manufacturer] = await db
+      .insert(manufacturers)
+      .values({
+        ...input,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning()
 
-      return manufacturer;
-    }),
+    return manufacturer
+  }),
 
   update: protectedProcedure
     .input(
       z.object({
         id: z.number(),
         data: manufacturerUpdateSchema,
-      })
+      }),
     )
     .mutation(async ({ input }) => {
       const [manufacturer] = await db
@@ -54,20 +50,18 @@ export const manufacturersRouter = router({
           updatedAt: new Date(),
         })
         .where(eq(manufacturers.id, input.id))
-        .returning();
+        .returning()
 
       if (!manufacturer) {
-        throw new Error('Manufacturer not found');
+        throw new Error('Manufacturer not found')
       }
 
-      return manufacturer;
+      return manufacturer
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
-      await db.delete(manufacturers).where(eq(manufacturers.id, input.id));
+  delete: protectedProcedure.input(z.object({ id: z.number() })).mutation(async ({ input }) => {
+    await db.delete(manufacturers).where(eq(manufacturers.id, input.id))
 
-      return { success: true };
-    }),
+    return { success: true }
+  }),
 })

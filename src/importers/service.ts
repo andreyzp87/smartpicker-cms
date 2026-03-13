@@ -43,9 +43,9 @@ export async function storeRawImports(result: ImportResult) {
  * Recursively remove null bytes from strings in an object
  * PostgreSQL JSONB doesn't support \u0000 (null bytes) in text
  */
-function sanitizeNullBytes(obj: any): any {
+function sanitizeNullBytes(obj: unknown): unknown {
   if (typeof obj === 'string') {
-    return obj.replace(/\u0000/g, '')
+    return obj.replaceAll('\0', '')
   }
 
   if (Array.isArray(obj)) {
@@ -53,7 +53,7 @@ function sanitizeNullBytes(obj: any): any {
   }
 
   if (obj && typeof obj === 'object') {
-    const sanitized: any = {}
+    const sanitized: Record<string, unknown> = {}
     for (const [key, value] of Object.entries(obj)) {
       sanitized[key] = sanitizeNullBytes(value)
     }

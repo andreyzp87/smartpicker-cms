@@ -40,7 +40,7 @@ export function createWorkers() {
 
   new Worker(
     'exports',
-    async (job) => {
+    async () => {
       logger.info('Starting export')
       // await generateExports()
 

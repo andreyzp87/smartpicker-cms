@@ -1,21 +1,21 @@
 import { TRPCError } from '@trpc/server'
 
 export class NotFoundError extends Error {
-  constructor(message: string = 'Resource not found') {
+  constructor(message = 'Resource not found') {
     super(message)
     this.name = 'NotFoundError'
   }
 }
 
 export class ValidationError extends Error {
-  constructor(message: string = 'Validation failed') {
+  constructor(message = 'Validation failed') {
     super(message)
     this.name = 'ValidationError'
   }
 }
 
 export class UnauthorizedError extends Error {
-  constructor(message: string = 'Unauthorized') {
+  constructor(message = 'Unauthorized') {
     super(message)
     this.name = 'UnauthorizedError'
   }

@@ -2,10 +2,15 @@ import { db } from '../db/client'
 import { products, rawImports, zigbeeDetails, zwaveDetails } from '../db/schema'
 import { eq, isNull } from 'drizzle-orm'
 import slugify from 'slugify'
+import { logger } from '../lib/logger'
 import { extractProduct } from './extractors'
 import { findOrCreateManufacturer } from './manufacturers'
 import { createCompatibilityRecords } from './compatibility'
 import { ProcessResult } from './types'
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
 
 /**
  * Generate a unique slug for a product
@@ -42,6 +47,10 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
 
   if (!rawImport) {
     throw new Error(`Raw import not found: ${rawImportId}`)
+  }
+
+  if (!isRecord(rawImport.data)) {
+    throw new Error(`Raw import ${rawImportId} has invalid payload data`)
   }
 
   // Extract product fields from raw data
@@ -100,55 +109,61 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
   }
 
   // Update the raw import with the product link
-  await db.update(rawImports).set({ productId, processedAt: new Date() }).where(eq(rawImports.id, rawImportId))
+  await db
+    .update(rawImports)
+    .set({ productId, processedAt: new Date() })
+    .where(eq(rawImports.id, rawImportId))
 
   // Handle protocol-specific details
   if (extracted.zigbeeDetails && extracted.protocol === 'zigbee') {
-    await db
-      .insert(zigbeeDetails)
-      .values({
-        productId,
-        ieeeManufacturer: extracted.zigbeeDetails.ieeeManufacturer || null,
-        modelId: extracted.zigbeeDetails.modelId || null,
-        endpoints: extracted.zigbeeDetails.endpoints || null,
-        exposes: extracted.zigbeeDetails.exposes || null,
-      })
-      .onConflictDoUpdate({
-        target: zigbeeDetails.productId,
-        set: {
-          ieeeManufacturer: extracted.zigbeeDetails.ieeeManufacturer || null,
-          modelId: extracted.zigbeeDetails.modelId || null,
-          endpoints: extracted.zigbeeDetails.endpoints || null,
-          exposes: extracted.zigbeeDetails.exposes || null,
-        },
-      })
+    const zigbeeDetailsRecord: typeof zigbeeDetails.$inferInsert = {
+      productId,
+      ieeeManufacturer: extracted.zigbeeDetails.ieeeManufacturer ?? null,
+      modelId: extracted.zigbeeDetails.modelId ?? null,
+      endpoints: extracted.zigbeeDetails.endpoints ?? null,
+      exposes: extracted.zigbeeDetails.exposes ?? null,
+    }
+    const zigbeeDetailsUpdate = {
+      ieeeManufacturer: zigbeeDetailsRecord.ieeeManufacturer,
+      modelId: zigbeeDetailsRecord.modelId,
+      endpoints: zigbeeDetailsRecord.endpoints,
+      exposes: zigbeeDetailsRecord.exposes,
+    }
+
+    await db.insert(zigbeeDetails).values(zigbeeDetailsRecord).onConflictDoUpdate({
+      target: zigbeeDetails.productId,
+      set: zigbeeDetailsUpdate,
+    })
   }
 
   if (extracted.zwaveDetails && extracted.protocol === 'zwave') {
-    await db
-      .insert(zwaveDetails)
-      .values({
-        productId,
-        zwaveManufacturerId: extracted.zwaveDetails.zwaveManufacturerId || null,
-        productType: extracted.zwaveDetails.productType || null,
-        productIdHex: extracted.zwaveDetails.productIdHex || null,
-        frequency: extracted.zwaveDetails.frequency || null,
-      })
-      .onConflictDoUpdate({
-        target: zwaveDetails.productId,
-        set: {
-          zwaveManufacturerId: extracted.zwaveDetails.zwaveManufacturerId || null,
-          productType: extracted.zwaveDetails.productType || null,
-          productIdHex: extracted.zwaveDetails.productIdHex || null,
-          frequency: extracted.zwaveDetails.frequency || null,
-        },
-      })
+    const zwaveDetailsRecord: typeof zwaveDetails.$inferInsert = {
+      productId,
+      zwaveManufacturerId: extracted.zwaveDetails.zwaveManufacturerId ?? null,
+      productType: extracted.zwaveDetails.productType ?? null,
+      productIdHex: extracted.zwaveDetails.productIdHex ?? null,
+      frequency: extracted.zwaveDetails.frequency ?? null,
+    }
+    const zwaveDetailsUpdate = {
+      zwaveManufacturerId: zwaveDetailsRecord.zwaveManufacturerId,
+      productType: zwaveDetailsRecord.productType,
+      productIdHex: zwaveDetailsRecord.productIdHex,
+      frequency: zwaveDetailsRecord.frequency,
+    }
+
+    await db.insert(zwaveDetails).values(zwaveDetailsRecord).onConflictDoUpdate({
+      target: zwaveDetails.productId,
+      set: zwaveDetailsUpdate,
+    })
   }
 
   // Handle compatibility data (from Blakadder)
   let compatibilityRecordsCreated = 0
   if (extracted.compatibleWith && extracted.compatibleWith.length > 0) {
-    compatibilityRecordsCreated = await createCompatibilityRecords(productId, extracted.compatibleWith)
+    compatibilityRecordsCreated = await createCompatibilityRecords(
+      productId,
+      extracted.compatibleWith,
+    )
   }
 
   return {
@@ -177,7 +192,7 @@ export async function transformAllUnprocessed(limit?: number): Promise<ProcessRe
       const result = await transformRawImport(rawImport.id)
       results.push(result)
     } catch (error) {
-      console.error(`Failed to process raw import ${rawImport.id}:`, error)
+      logger.error({ error, rawImportId: rawImport.id }, 'Failed to process raw import')
       // Continue processing other imports
     }
   }

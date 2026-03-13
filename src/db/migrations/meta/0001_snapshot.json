@@ -46,12 +46,8 @@
           "name": "categories_parent_id_categories_id_fk",
           "tableFrom": "categories",
           "tableTo": "categories",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parent_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -61,9 +57,7 @@
         "categories_slug_unique": {
           "name": "categories_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -170,12 +164,8 @@
           "name": "device_compatibility_product_id_products_id_fk",
           "tableFrom": "device_compatibility",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -183,12 +173,8 @@
           "name": "device_compatibility_hub_id_hubs_id_fk",
           "tableFrom": "device_compatibility",
           "tableTo": "hubs",
-          "columnsFrom": [
-            "hub_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["hub_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -198,11 +184,7 @@
         "compat_unique": {
           "name": "compat_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "product_id",
-            "hub_id",
-            "integration_name"
-          ]
+          "columns": ["product_id", "hub_id", "integration_name"]
         }
       },
       "policies": {},
@@ -257,12 +239,8 @@
           "name": "hubs_manufacturer_id_manufacturers_id_fk",
           "tableFrom": "hubs",
           "tableTo": "manufacturers",
-          "columnsFrom": [
-            "manufacturer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manufacturer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -272,9 +250,7 @@
         "hubs_slug_unique": {
           "name": "hubs_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -337,9 +313,7 @@
         "manufacturers_slug_unique": {
           "name": "manufacturers_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -428,12 +402,8 @@
           "name": "product_prices_product_id_products_id_fk",
           "tableFrom": "product_prices",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -441,12 +411,8 @@
           "name": "product_prices_retailer_id_retailers_id_fk",
           "tableFrom": "product_prices",
           "tableTo": "retailers",
-          "columnsFrom": [
-            "retailer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["retailer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -552,12 +518,8 @@
           "name": "product_sources_product_id_products_id_fk",
           "tableFrom": "product_sources",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -565,12 +527,8 @@
           "name": "product_sources_raw_import_id_raw_imports_id_fk",
           "tableFrom": "product_sources",
           "tableTo": "raw_imports",
-          "columnsFrom": [
-            "raw_import_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raw_import_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -580,10 +538,7 @@
         "product_sources_unique": {
           "name": "product_sources_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "product_id",
-            "raw_import_id"
-          ]
+          "columns": ["product_id", "raw_import_id"]
         }
       },
       "policies": {},
@@ -776,12 +731,8 @@
           "name": "products_manufacturer_id_manufacturers_id_fk",
           "tableFrom": "products",
           "tableTo": "manufacturers",
-          "columnsFrom": [
-            "manufacturer_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["manufacturer_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -789,12 +740,8 @@
           "name": "products_category_id_categories_id_fk",
           "tableFrom": "products",
           "tableTo": "categories",
-          "columnsFrom": [
-            "category_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["category_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -802,12 +749,8 @@
           "name": "products_primary_source_id_raw_imports_id_fk",
           "tableFrom": "products",
           "tableTo": "raw_imports",
-          "columnsFrom": [
-            "primary_source_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["primary_source_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -817,9 +760,7 @@
         "products_slug_unique": {
           "name": "products_slug_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "slug"
-          ]
+          "columns": ["slug"]
         }
       },
       "policies": {},
@@ -917,12 +858,8 @@
           "name": "raw_imports_product_id_products_id_fk",
           "tableFrom": "raw_imports",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -932,10 +869,7 @@
         "raw_imports_source_unique": {
           "name": "raw_imports_source_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "source",
-            "source_id"
-          ]
+          "columns": ["source", "source_id"]
         }
       },
       "policies": {},
@@ -1027,12 +961,8 @@
           "name": "zigbee_details_product_id_products_id_fk",
           "tableFrom": "zigbee_details",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1085,12 +1015,8 @@
           "name": "zwave_details_product_id_products_id_fk",
           "tableFrom": "zwave_details",
           "tableTo": "products",
-          "columnsFrom": [
-            "product_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["product_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1106,53 +1032,27 @@
     "public.compatibility_status": {
       "name": "compatibility_status",
       "schema": "public",
-      "values": [
-        "verified",
-        "reported",
-        "untested",
-        "incompatible"
-      ]
+      "values": ["verified", "reported", "untested", "incompatible"]
     },
     "public.merge_confidence": {
       "name": "merge_confidence",
       "schema": "public",
-      "values": [
-        "exact",
-        "high",
-        "medium",
-        "low"
-      ]
+      "values": ["exact", "high", "medium", "low"]
     },
     "public.product_status": {
       "name": "product_status",
       "schema": "public",
-      "values": [
-        "draft",
-        "published",
-        "archived"
-      ]
+      "values": ["draft", "published", "archived"]
     },
     "public.protocol": {
       "name": "protocol",
       "schema": "public",
-      "values": [
-        "zigbee",
-        "zwave",
-        "matter",
-        "wifi",
-        "thread",
-        "bluetooth"
-      ]
+      "values": ["zigbee", "zwave", "matter", "wifi", "thread", "bluetooth"]
     },
     "public.zwave_frequency": {
       "name": "zwave_frequency",
       "schema": "public",
-      "values": [
-        "us",
-        "eu",
-        "au",
-        "jp"
-      ]
+      "values": ["us", "eu", "au", "jp"]
     }
   },
   "schemas": {},

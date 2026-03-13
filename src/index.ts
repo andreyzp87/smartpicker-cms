@@ -30,7 +30,7 @@ app.use(
   trpcServer({
     router: appRouter,
     createContext,
-  })
+  }),
 )
 
 // Health check endpoint
@@ -44,7 +44,7 @@ app.get(
   serveStatic({
     root: './data/exports',
     rewriteRequestPath: (path) => path.replace('/api/exports/', '/'),
-  })
+  }),
 )
 
 // Serve static admin UI (production)
@@ -53,7 +53,7 @@ app.use(
   serveStatic({
     root: './admin/dist',
     rewriteRequestPath: (path) => path.replace('/admin', ''),
-  })
+  }),
 )
 app.get('/admin', serveStatic({ root: './admin/dist', path: '/index.html' }))
 // SPA fallback: serve index.html for all non-file admin routes

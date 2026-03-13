@@ -1,31 +1,31 @@
-import { useParams, useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { ManufacturerForm } from '@/components/manufacturers/ManufacturerForm';
-import { Card } from '@/components/ui/card';
-import { toast } from 'sonner';
+import { useParams, useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { ManufacturerForm } from '@/components/manufacturers/ManufacturerForm'
+import { Card } from '@/components/ui/card'
+import { toast } from 'sonner'
 
 export function ManufacturerEdit() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const utils = trpc.useUtils();
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const utils = trpc.useUtils()
 
   const { data: manufacturer, isLoading } = trpc.manufacturers.byId.useQuery({
     id: Number(id),
-  });
+  })
 
   const updateMutation = trpc.manufacturers.update.useMutation({
     onSuccess: () => {
-      utils.manufacturers.list.invalidate();
-      toast.success('Manufacturer updated successfully');
-      navigate('/manufacturers');
+      utils.manufacturers.list.invalidate()
+      toast.success('Manufacturer updated successfully')
+      navigate('/manufacturers')
     },
     onError: (error) => {
-      toast.error(`Failed to update manufacturer: ${error.message}`);
+      toast.error(`Failed to update manufacturer: ${error.message}`)
     },
-  });
+  })
 
-  if (isLoading) return <div>Loading...</div>;
-  if (!manufacturer) return <div>Manufacturer not found</div>;
+  if (isLoading) return <div>Loading...</div>
+  if (!manufacturer) return <div>Manufacturer not found</div>
 
   return (
     <div>
@@ -39,5 +39,5 @@ export function ManufacturerEdit() {
         />
       </Card>
     </div>
-  );
+  )
 }

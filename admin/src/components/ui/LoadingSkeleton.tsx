@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/components/ui/skeleton'
 
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
@@ -9,5 +9,5 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
         </div>
       ))}
     </div>
-  );
+  )
 }

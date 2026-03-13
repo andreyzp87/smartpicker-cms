@@ -16,9 +16,9 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "dev:worker": "tsx watch src/worker.ts",
-    "build": "tsup && pnpm build:admin",
+    "build": "pnpm build:server && pnpm build:admin",
     "build:server": "tsup",
-    "build:admin": "cd admin && pnpm build",
+    "build:admin": "pnpm --dir admin build",
     "start": "node dist/index.js",
     "start:worker": "node dist/worker.js",
     "cli": "tsx src/cli.ts",
@@ -30,9 +30,15 @@
     "extract:z2m": "tsx scripts/extract-z2m-devices.ts",
     "extract:blakadder": "tsx scripts/extract-blakadder-devices.ts",
     "extract:zwave": "tsx scripts/extract-zwave-devices.ts",
-    "lint": "eslint .",
+    "lint": "pnpm lint:server && pnpm lint:admin",
+    "lint:server": "eslint src drizzle.config.ts tsup.config.ts",
+    "lint:admin": "eslint admin/src admin/vite.config.ts",
     "format": "prettier --write .",
-    "typecheck": "tsc --noEmit"
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm typecheck:server && pnpm typecheck:admin",
+    "typecheck:server": "tsc --noEmit -p tsconfig.json",
+    "typecheck:admin": "pnpm --dir admin exec tsc --noEmit",
+    "check": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm build"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.966.0",

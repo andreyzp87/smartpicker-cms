@@ -1,13 +1,13 @@
-import { useNavigate } from 'react-router';
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
-import { ManufacturersTable } from '@/components/manufacturers/ManufacturersTable';
-import { TableSkeleton } from '@/components/ui/LoadingSkeleton';
+import { useNavigate } from 'react-router'
+import { trpc } from '@/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { Plus } from 'lucide-react'
+import { ManufacturersTable } from '@/components/manufacturers/ManufacturersTable'
+import { TableSkeleton } from '@/components/ui/LoadingSkeleton'
 
 export function ManufacturersList() {
-  const navigate = useNavigate();
-  const { data, isLoading } = trpc.manufacturers.list.useQuery();
+  const navigate = useNavigate()
+  const { data, isLoading } = trpc.manufacturers.list.useQuery()
 
   return (
     <div>
@@ -19,11 +19,7 @@ export function ManufacturersList() {
         </Button>
       </div>
 
-      {isLoading ? (
-        <TableSkeleton rows={10} />
-      ) : (
-        <ManufacturersTable manufacturers={data ?? []} />
-      )}
+      {isLoading ? <TableSkeleton rows={10} /> : <ManufacturersTable manufacturers={data ?? []} />}
     </div>
-  );
+  )
 }

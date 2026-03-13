@@ -5,9 +5,9 @@ import { ProductWithSource } from './finder'
  * Higher number = higher priority
  */
 const SOURCE_PRIORITY: Record<string, number> = {
-  'zigbee2mqtt': 3, // Most detailed exposes data
+  zigbee2mqtt: 3, // Most detailed exposes data
   'zwave-js': 2, // Official Z-Wave device database
-  'blakadder': 1, // Community-curated
+  blakadder: 1, // Community-curated
 }
 
 /**
@@ -48,7 +48,7 @@ export function pickCanonicalProduct(products: ProductWithSource[]): ProductWith
  */
 export function determinePrimarySource(
   canonicalProduct: ProductWithSource,
-  allProducts: ProductWithSource[],
+  _allProducts: ProductWithSource[],
 ): number {
   // The canonical product's primary source becomes the primary source for the merged product
   return canonicalProduct.primarySourceId

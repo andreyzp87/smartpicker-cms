@@ -39,10 +39,7 @@ async function ensureEmailAvailable(email: string, userId?: number) {
 
 export const usersRouter = router({
   list: protectedProcedure.query(async () => {
-    return db
-      .select(safeUserSelect)
-      .from(users)
-      .orderBy(asc(users.email))
+    return db.select(safeUserSelect).from(users).orderBy(asc(users.email))
   }),
 
   create: protectedProcedure.input(userCreateInputSchema).mutation(async ({ input }) => {

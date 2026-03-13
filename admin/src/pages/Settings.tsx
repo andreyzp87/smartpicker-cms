@@ -1,66 +1,66 @@
-import { trpc } from '@/lib/trpc';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { UsersPanel } from '@/components/users/UsersPanel';
-import { toast } from 'sonner';
-import { Download, FileJson, Loader2 } from 'lucide-react';
+import { trpc } from '@/lib/trpc'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { UsersPanel } from '@/components/users/UsersPanel'
+import { toast } from 'sonner'
+import { Download, FileJson, Loader2 } from 'lucide-react'
 
 export function Settings() {
   const generateAllMutation = trpc.exports.generateAll.useMutation({
     onSuccess: (data) => {
       toast.success('All exports generated successfully', {
         description: `Products: ${data.exports.products.count}, Manufacturers: ${data.exports.manufacturers.count}, Categories: ${data.exports.categories.count}, Hubs: ${data.exports.hubs.count}, Protocols: ${data.exports.protocols.count}`,
-      });
+      })
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const generateProductsMutation = trpc.exports.generateProducts.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message)
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const generateManufacturersMutation = trpc.exports.generateManufacturers.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message)
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const generateCategoriesMutation = trpc.exports.generateCategories.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message)
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const generateHubsMutation = trpc.exports.generateHubs.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message)
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const generateProtocolsMutation = trpc.exports.generateProtocols.useMutation({
     onSuccess: (data) => {
-      toast.success(data.message);
+      toast.success(data.message)
     },
     onError: (error) => {
-      toast.error(`Export failed: ${error.message}`);
+      toast.error(`Export failed: ${error.message}`)
     },
-  });
+  })
 
   const isAnyMutationLoading =
     generateAllMutation.isPending ||
@@ -68,7 +68,7 @@ export function Settings() {
     generateManufacturersMutation.isPending ||
     generateCategoriesMutation.isPending ||
     generateHubsMutation.isPending ||
-    generateProtocolsMutation.isPending;
+    generateProtocolsMutation.isPending
 
   return (
     <div className="space-y-6">
@@ -226,5 +226,5 @@ export function Settings() {
 
       <UsersPanel />
     </div>
-  );
+  )
 }
