@@ -4,6 +4,7 @@ import { eq, isNull } from 'drizzle-orm'
 import slugify from 'slugify'
 import { logger } from '../lib/logger'
 import { extractProduct } from './extractors'
+import { resolveCategoryIdForImport } from './categories'
 import { findOrCreateManufacturer } from './manufacturers'
 import { createCompatibilityRecords } from './compatibility'
 import { ProcessResult } from './types'
@@ -58,6 +59,7 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
 
   // Find or create manufacturer
   const manufacturerId = await findOrCreateManufacturer(extracted.vendor)
+  const categoryId = await resolveCategoryIdForImport(rawImport.source, rawImport.data, extracted)
 
   // Generate unique slug
   const slug = await generateUniqueSlug(extracted.vendor, extracted.model || extracted.name)
@@ -82,6 +84,7 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
         name: extracted.name,
         slug,
         manufacturerId,
+        categoryId: existingProduct[0].categoryId ?? categoryId,
         model: extracted.model,
         primaryProtocol: extracted.protocol,
         description: extracted.description,
@@ -96,6 +99,7 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
         name: extracted.name,
         slug,
         manufacturerId,
+        categoryId,
         model: extracted.model,
         primaryProtocol: extracted.protocol,
         description: extracted.description,

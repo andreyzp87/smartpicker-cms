@@ -1,11 +1,13 @@
 import { trpc } from '@/lib/trpc'
-import { Card } from '@/components/ui/card'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { useNavigate } from 'react-router'
-import { Package, Building2, FolderTree, Radio, Plus } from 'lucide-react'
+import { toast } from 'sonner'
+import { Package, Building2, FolderTree, Radio, Plus, Loader2, UploadCloud } from 'lucide-react'
 
 export function Dashboard() {
   const navigate = useNavigate()
+  const utils = trpc.useUtils()
 
   const { data: productsData } = trpc.products.list.useQuery({
     limit: 1,
@@ -20,6 +22,31 @@ export function Dashboard() {
   const { data: importsData } = trpc.imports.list.useQuery({
     limit: 1,
     offset: 0,
+  })
+  const { data: bulkPublishPreview, isLoading: isBulkPublishPreviewLoading } =
+    trpc.products.bulkPublishPreview.useQuery()
+  const bulkPublishMutation = trpc.products.bulkPublishSafe.useMutation({
+    onSuccess: async (data) => {
+      await Promise.all([
+        utils.products.list.invalidate(),
+        utils.products.bulkPublishPreview.invalidate(),
+        utils.manufacturers.list.invalidate(),
+        utils.categories.list.invalidate(),
+        utils.hubs.list.invalidate(),
+      ])
+
+      if (data.publishedProducts === 0) {
+        toast.info('No export-ready draft devices found')
+        return
+      }
+
+      toast.success('Bulk publish complete', {
+        description: `${data.publishedProducts} devices published. Newly unlocked in export: ${data.newlyUnlockedRelated.manufacturers} manufacturers, ${data.newlyUnlockedRelated.categories} categories, ${data.newlyUnlockedRelated.hubs} hubs.`,
+      })
+    },
+    onError: (error) => {
+      toast.error(`Bulk publish failed: ${error.message}`)
+    },
   })
 
   const stats = [
@@ -114,6 +141,98 @@ export function Dashboard() {
         <Button variant="outline" onClick={() => navigate('/imports')}>
           View All Imports
         </Button>
+      </Card>
+
+      <Card className="mt-8">
+        <CardHeader className="gap-3">
+          <CardTitle className="flex items-center gap-2">
+            <UploadCloud className="h-5 w-5" />
+            Live Export Prefill
+          </CardTitle>
+          <CardDescription>
+            Safely publish draft devices that are export-ready. A device is considered safe when it
+            already has a manufacturer, category, and primary protocol. Related manufacturers,
+            categories, and hubs appear in the live export automatically once those devices are
+            published.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="rounded-lg border bg-gray-50 p-4">
+              <p className="text-sm text-gray-600">Safe draft devices</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">
+                {bulkPublishPreview?.eligibleProducts ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border bg-gray-50 p-4">
+              <p className="text-sm text-gray-600">Manufacturers unlocked</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">
+                {bulkPublishPreview?.newlyUnlockedRelated.manufacturers ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border bg-gray-50 p-4">
+              <p className="text-sm text-gray-600">Categories unlocked</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">
+                {bulkPublishPreview?.newlyUnlockedRelated.categories ?? 0}
+              </p>
+            </div>
+            <div className="rounded-lg border bg-gray-50 p-4">
+              <p className="text-sm text-gray-600">Hubs unlocked</p>
+              <p className="mt-1 text-3xl font-bold text-gray-900">
+                {bulkPublishPreview?.newlyUnlockedRelated.hubs ?? 0}
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-lg border bg-blue-50 p-4 text-sm text-blue-950">
+            <p>
+              Draft devices reviewed: {bulkPublishPreview?.draftProducts ?? 0}. Blocked drafts:{' '}
+              {bulkPublishPreview?.blockedProducts ?? 0}.
+            </p>
+            <p className="mt-2">
+              Missing fields across drafts: manufacturer{' '}
+              {bulkPublishPreview?.missingManufacturerCount ?? 0}, category{' '}
+              {bulkPublishPreview?.missingCategoryCount ?? 0}, protocol{' '}
+              {bulkPublishPreview?.missingProtocolCount ?? 0}.
+            </p>
+            <p className="mt-2">
+              After publishing, the export would contain approximately{' '}
+              {bulkPublishPreview?.totalsAfterPublish.products ?? 0} devices,{' '}
+              {bulkPublishPreview?.totalsAfterPublish.manufacturers ?? 0} manufacturers,{' '}
+              {bulkPublishPreview?.totalsAfterPublish.categories ?? 0} categories, and{' '}
+              {bulkPublishPreview?.totalsAfterPublish.hubs ?? 0} hubs.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="text-sm text-gray-600">
+              Rules:{' '}
+              {bulkPublishPreview?.rules.join(' · ') ??
+                'manufacturer · category · primary protocol'}
+            </div>
+            <Button
+              onClick={() => bulkPublishMutation.mutate()}
+              disabled={
+                isBulkPublishPreviewLoading ||
+                bulkPublishMutation.isPending ||
+                (bulkPublishPreview?.eligibleProducts ?? 0) === 0
+              }
+              className="gap-2"
+            >
+              {bulkPublishMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Publishing...
+                </>
+              ) : (
+                <>
+                  <UploadCloud className="h-4 w-4" />
+                  Bulk Publish Safe Drafts
+                </>
+              )}
+            </Button>
+          </div>
+        </CardContent>
       </Card>
     </div>
   )

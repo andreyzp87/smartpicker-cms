@@ -1,7 +1,7 @@
 import { Command } from 'commander'
 import { getImporter } from './importers'
 import { storeRawImports } from './importers/service'
-import { transformAllUnprocessed, backfillCompatibility } from './processors'
+import { transformAllUnprocessed, backfillCompatibility, backfillCategories } from './processors'
 import { deduplicateProducts, getDuplicateStats } from './deduplication'
 import { exportService } from './services/export.service'
 import { db } from './db/client'
@@ -84,6 +84,28 @@ program
       process.exit(0)
     } catch (error) {
       console.error('❌ Transformation failed:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('backfill-categories')
+  .description('Backfill categories for existing imported products that are still uncategorized')
+  .action(async () => {
+    try {
+      console.log('🔄 Backfilling categories...')
+
+      const { processed, categorized, skipped } = await backfillCategories()
+
+      console.log(`\n✅ Category backfill complete!`)
+      console.log(`   Products processed: ${processed}`)
+      console.log(`   Categories assigned: ${categorized}`)
+      console.log(`   Skipped: ${skipped}`)
+
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Category backfill failed:')
       console.error(error)
       process.exit(1)
     }
