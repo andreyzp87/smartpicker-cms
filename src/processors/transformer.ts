@@ -6,7 +6,7 @@ import { logger } from '../lib/logger'
 import { extractProduct } from './extractors'
 import { resolveCategoryIdForImport } from './categories'
 import { findOrCreateManufacturer } from './manufacturers'
-import { createCompatibilityRecords } from './compatibility'
+import { createCompatibilityRecords, createSourceBackedCompatibilityRecords } from './compatibility'
 import { ProcessResult } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -169,6 +169,11 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
       extracted.compatibleWith,
     )
   }
+
+  compatibilityRecordsCreated += await createSourceBackedCompatibilityRecords(
+    productId,
+    rawImport.source,
+  )
 
   return {
     productId,

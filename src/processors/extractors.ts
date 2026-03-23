@@ -9,6 +9,10 @@ function getString(value: unknown): string | undefined {
 }
 
 function getStringArray(value: unknown): string[] {
+  if (typeof value === 'string') {
+    return [value]
+  }
+
   return Array.isArray(value)
     ? value.filter((item): item is string => typeof item === 'string')
     : []

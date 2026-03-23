@@ -1,6 +1,6 @@
-import { and, eq, gt } from 'drizzle-orm'
+import { and, count, eq, gt, inArray } from 'drizzle-orm'
 import { db } from '../db/client'
-import { products } from '../db/schema'
+import { deviceCompatibility, products } from '../db/schema'
 import { logger } from '../lib/logger'
 import { createStorageDriver, getStorageConfig } from '../storage'
 import type { StorageDriver } from '../storage'
@@ -9,6 +9,10 @@ const EXPORT_VERSION = '3.0'
 const PRODUCT_EXPORT_BATCH_SIZE = 250
 const FEATURED_DEVICE_COUNT = 12
 const RECENT_DEVICE_COUNT = 24
+const LIMITED_EXPORT_MAX_MANUFACTURERS = 20
+const LIMITED_EXPORT_MAX_DEVICES_PER_COMBO = 10
+const UNCATEGORIZED_LIMITED_GROUP = '__uncategorized__'
+const UNKNOWN_PROTOCOL_LIMITED_GROUP = '__unknown_protocol__'
 
 const PROTOCOL_DEFINITIONS = [
   {
@@ -51,6 +55,7 @@ const PROTOCOL_DEFINITIONS = [
 
 type ProtocolSlug = (typeof PROTOCOL_DEFINITIONS)[number]['slug']
 type SitemapPageType = 'static' | 'device' | 'hub' | 'manufacturer' | 'category' | 'protocol'
+type ExportMode = 'full' | 'limited'
 
 interface ExportEntityRef {
   id: number
@@ -171,6 +176,30 @@ interface ProtocolAggregate {
 interface RecentProductRecord {
   slug: string
   updatedAt: Date
+}
+
+interface LimitedExportCandidate {
+  id: number
+  name: string
+  manufacturer: Pick<ExportEntityRef, 'slug' | 'name'> | null
+  categoryId: number | null
+  primaryProtocol: string | null
+  updatedAt: Date
+  compatibilityReferenceCount: number
+}
+
+interface ExportBuildOptions {
+  mode?: ExportMode
+  writeProductDetails?: boolean
+}
+
+interface ExportOptions {
+  mode?: ExportMode
+}
+
+interface LimitedExportSelection {
+  manufacturerSlugs: Set<string>
+  productIds: number[]
 }
 
 export interface ProductExportSummary {
@@ -336,9 +365,17 @@ export class ExportService {
     this.storage = storage ?? createStorageDriver(getStorageConfig())
   }
 
-  async generateProductsExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateProductsExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting products export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot(true))
+    const resolvedSnapshot =
+      snapshot ??
+      (await this.buildExportSnapshot({
+        mode: options.mode,
+        writeProductDetails: true,
+      }))
 
     await this.deleteStaleJsonFiles('products', resolvedSnapshot.productDetailKeys, [
       'products/slugs.json',
@@ -367,9 +404,12 @@ export class ExportService {
     return { url, count: resolvedSnapshot.productSummaries.length }
   }
 
-  async generateManufacturersExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateManufacturersExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting manufacturers export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
     const detailKeys = new Set(
       resolvedSnapshot.manufacturerSlugs.map((slug) => `manufacturers/${slug}.json`),
     )
@@ -405,9 +445,12 @@ export class ExportService {
     return { url, count: resolvedSnapshot.manufacturerSummaries.length }
   }
 
-  async generateCategoriesExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateCategoriesExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting categories export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
 
     await this.deleteStaleJsonFiles('categories', resolvedSnapshot.categoryDetailKeys, [
       'categories/paths.json',
@@ -442,9 +485,12 @@ export class ExportService {
     return { url, count: resolvedSnapshot.categorySummaries.length }
   }
 
-  async generateHubsExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateHubsExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting hubs export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
     const detailKeys = new Set(resolvedSnapshot.hubSlugs.map((slug) => `hubs/${slug}.json`))
 
     await this.deleteStaleJsonFiles('hubs', detailKeys, ['hubs/slugs.json'])
@@ -478,9 +524,12 @@ export class ExportService {
     return { url, count: resolvedSnapshot.hubSummaries.length }
   }
 
-  async generateProtocolsExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateProtocolsExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting protocols export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
     const detailKeys = new Set(
       resolvedSnapshot.protocolSlugs.map((slug) => `protocols/${slug}.json`),
     )
@@ -516,17 +565,23 @@ export class ExportService {
     return { url, count: resolvedSnapshot.protocolSummaries.length }
   }
 
-  async generateSiteExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateSiteExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting site export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
     const url = await this.storage.write('site.json', resolvedSnapshot.site)
     logger.info(`Site export complete: ${url}`)
     return { url, count: 1 }
   }
 
-  async generateSitemapExport(snapshot?: ExportSnapshot): Promise<ExportWriteResult> {
+  async generateSitemapExport(
+    snapshot?: ExportSnapshot,
+    options: ExportOptions = {},
+  ): Promise<ExportWriteResult> {
     logger.info('Starting sitemap export generation')
-    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot())
+    const resolvedSnapshot = snapshot ?? (await this.buildExportSnapshot({ mode: options.mode }))
     const url = await this.storage.write('sitemap.json', {
       generated: resolvedSnapshot.generated,
       version: EXPORT_VERSION,
@@ -537,7 +592,7 @@ export class ExportService {
     return { url, count: resolvedSnapshot.sitemap.length }
   }
 
-  async generateAllExports(): Promise<{
+  async generateAllExports(options: ExportOptions = {}): Promise<{
     products: ExportWriteResult
     manufacturers: ExportWriteResult
     categories: ExportWriteResult
@@ -547,7 +602,10 @@ export class ExportService {
     sitemap: ExportWriteResult
   }> {
     logger.info('Starting full export generation')
-    const snapshot = await this.buildExportSnapshot(true)
+    const snapshot = await this.buildExportSnapshot({
+      mode: options.mode,
+      writeProductDetails: true,
+    })
 
     const [
       productsResult,
@@ -586,8 +644,17 @@ export class ExportService {
     return this.storage.list()
   }
 
-  private async buildExportSnapshot(writeProductDetails = false): Promise<ExportSnapshot> {
+  private async buildExportSnapshot(options: ExportBuildOptions = {}): Promise<ExportSnapshot> {
+    const mode = options.mode ?? 'full'
+    const writeProductDetails = options.writeProductDetails ?? false
     const generated = new Date().toISOString()
+    const limitedSelection = mode === 'limited' ? await this.buildLimitedExportSelection() : null
+
+    if (limitedSelection) {
+      logger.info(
+        `Preparing limited export snapshot with ${limitedSelection.manufacturerSlugs.size} manufacturers and ${limitedSelection.productIds.length} selected products`,
+      )
+    }
 
     const manufacturers = (await db.query.manufacturers.findMany({
       orderBy: (manufacturers, { asc }) => [asc(manufacturers.name)],
@@ -669,125 +736,162 @@ export class ExportService {
     const productDetailKeys = new Set<string>()
     const productNameBySlug = new Map<string, string>()
     const recentProducts: RecentProductRecord[] = []
-    let lastProductId = 0
+    const processProduct = async (product: PublishedProductRecord): Promise<void> => {
+      const categoryMetadata = product.category
+        ? (categoryMetadataById.get(product.category.id) ?? null)
+        : null
+      const compatibilitySummary = this.buildCompatibilitySummary(product.compatibility)
+      const summary = this.toProductSummary(product, categoryMetadata, compatibilitySummary)
+      const detail = this.toProductDetail(product, summary)
+      const detailKey = `products/${product.slug}.json`
+      const updatedAt = new Date(product.updatedAt)
 
-    while (true) {
-      const batch = (await db.query.products.findMany({
-        where: and(eq(products.status, 'published'), gt(products.id, lastProductId)),
-        with: {
-          manufacturer: true,
-          category: true,
-          zigbeeDetails: true,
-          zwaveDetails: true,
-          compatibility: {
-            with: {
-              hub: true,
-            },
-          },
-        },
-        orderBy: (products, { asc }) => [asc(products.id)],
-        limit: PRODUCT_EXPORT_BATCH_SIZE,
-      })) as PublishedProductRecord[]
+      productSummaries.push(summary)
+      productSlugs.push(product.slug)
+      productNameBySlug.set(product.slug, product.name)
+      productDetailKeys.add(detailKey)
+      recentProducts.push({ slug: product.slug, updatedAt })
 
-      if (batch.length === 0) {
-        break
+      if (writeProductDetails) {
+        await this.storage.write(detailKey, {
+          generated,
+          version: EXPORT_VERSION,
+          product: detail,
+        })
       }
 
-      for (const product of batch) {
-        const categoryMetadata = product.category
-          ? (categoryMetadataById.get(product.category.id) ?? null)
-          : null
-        const compatibilitySummary = this.buildCompatibilitySummary(product.compatibility)
-        const summary = this.toProductSummary(product, categoryMetadata, compatibilitySummary)
-        const detail = this.toProductDetail(product, summary)
-        const detailKey = `products/${product.slug}.json`
-        const updatedAt = new Date(product.updatedAt)
-
-        productSummaries.push(summary)
-        productSlugs.push(product.slug)
-        productNameBySlug.set(product.slug, product.name)
-        productDetailKeys.add(detailKey)
-        recentProducts.push({ slug: product.slug, updatedAt })
-
-        if (writeProductDetails) {
-          await this.storage.write(detailKey, {
-            generated,
-            version: EXPORT_VERSION,
-            product: detail,
-          })
+      if (product.manufacturer) {
+        const manufacturer = manufacturerAggregates.get(product.manufacturer.slug)
+        if (manufacturer) {
+          manufacturer.deviceSlugs.push(product.slug)
+          manufacturer.latestUpdatedAt = this.maxDate(manufacturer.latestUpdatedAt, updatedAt)
         }
+      }
 
-        if (product.manufacturer) {
-          const manufacturer = manufacturerAggregates.get(product.manufacturer.slug)
-          if (manufacturer) {
-            manufacturer.deviceSlugs.push(product.slug)
-            manufacturer.latestUpdatedAt = this.maxDate(manufacturer.latestUpdatedAt, updatedAt)
+      if (categoryMetadata) {
+        this.assignProductToCategory(
+          categoryMetadata.path,
+          product.slug,
+          updatedAt,
+          categoryAggregates,
+        )
+
+        for (const ancestor of categoryMetadata.ancestors) {
+          const ancestorMetadata = categoryMetadataById.get(ancestor.id)
+          if (ancestorMetadata) {
+            this.assignProductToCategory(
+              ancestorMetadata.path,
+              product.slug,
+              updatedAt,
+              categoryAggregates,
+              false,
+            )
           }
         }
+      }
 
-        if (categoryMetadata) {
-          this.assignProductToCategory(
-            categoryMetadata.path,
-            product.slug,
-            updatedAt,
-            categoryAggregates,
-          )
-
-          for (const ancestor of categoryMetadata.ancestors) {
-            const ancestorMetadata = categoryMetadataById.get(ancestor.id)
-            if (ancestorMetadata) {
-              this.assignProductToCategory(
-                ancestorMetadata.path,
-                product.slug,
-                updatedAt,
-                categoryAggregates,
-                false,
-              )
-            }
+      if (this.isProtocolSlug(product.primaryProtocol)) {
+        const protocol = protocolAggregates.get(product.primaryProtocol)
+        if (protocol) {
+          protocol.deviceSlugs.push(product.slug)
+          protocol.latestUpdatedAt = this.maxDate(protocol.latestUpdatedAt, updatedAt)
+          if (product.localControl) {
+            protocol.localControlCount += 1
+          }
+          if (product.cloudDependent) {
+            protocol.cloudDependentCount += 1
+          }
+          if (product.matterCertified) {
+            protocol.matterCertifiedCount += 1
           }
         }
+      }
+
+      for (const [hubSlug, hubStatus] of compatibilitySummary.byHub.entries()) {
+        const hub = hubAggregates.get(hubSlug)
+        if (!hub) {
+          continue
+        }
+
+        if (!hub.deviceSlugs.includes(product.slug)) {
+          hub.deviceSlugs.push(product.slug)
+        }
+
+        hub.latestUpdatedAt = this.maxDate(hub.latestUpdatedAt, updatedAt)
+        hub.statusCounts[hubStatus] = (hub.statusCounts[hubStatus] ?? 0) + 1
 
         if (this.isProtocolSlug(product.primaryProtocol)) {
-          const protocol = protocolAggregates.get(product.primaryProtocol)
-          if (protocol) {
-            protocol.deviceSlugs.push(product.slug)
-            protocol.latestUpdatedAt = this.maxDate(protocol.latestUpdatedAt, updatedAt)
-            if (product.localControl) {
-              protocol.localControlCount += 1
-            }
-            if (product.cloudDependent) {
-              protocol.cloudDependentCount += 1
-            }
-            if (product.matterCertified) {
-              protocol.matterCertifiedCount += 1
-            }
-          }
-        }
-
-        for (const [hubSlug, hubStatus] of compatibilitySummary.byHub.entries()) {
-          const hub = hubAggregates.get(hubSlug)
-          if (!hub) {
-            continue
-          }
-
-          if (!hub.deviceSlugs.includes(product.slug)) {
-            hub.deviceSlugs.push(product.slug)
-          }
-
-          hub.latestUpdatedAt = this.maxDate(hub.latestUpdatedAt, updatedAt)
-          hub.statusCounts[hubStatus] = (hub.statusCounts[hubStatus] ?? 0) + 1
-
-          if (this.isProtocolSlug(product.primaryProtocol)) {
-            hub.protocolCounts[product.primaryProtocol] =
-              (hub.protocolCounts[product.primaryProtocol] ?? 0) + 1
-          }
+          hub.protocolCounts[product.primaryProtocol] =
+            (hub.protocolCounts[product.primaryProtocol] ?? 0) + 1
         }
       }
+    }
 
-      lastProductId = batch[batch.length - 1].id
-      logger.info(
-        `Prepared ${productSummaries.length} product exports so far (last product id: ${lastProductId})`,
-      )
+    if (limitedSelection) {
+      for (
+        let index = 0;
+        index < limitedSelection.productIds.length;
+        index += PRODUCT_EXPORT_BATCH_SIZE
+      ) {
+        const batchIds = limitedSelection.productIds.slice(index, index + PRODUCT_EXPORT_BATCH_SIZE)
+        const batch = (await db.query.products.findMany({
+          where: and(eq(products.status, 'published'), inArray(products.id, batchIds)),
+          with: {
+            manufacturer: true,
+            category: true,
+            zigbeeDetails: true,
+            zwaveDetails: true,
+            compatibility: {
+              with: {
+                hub: true,
+              },
+            },
+          },
+          orderBy: (products, { asc }) => [asc(products.id)],
+        })) as PublishedProductRecord[]
+
+        for (const product of batch) {
+          await processProduct(product)
+        }
+
+        logger.info(
+          `Prepared ${productSummaries.length} limited product exports so far (${Math.min(index + PRODUCT_EXPORT_BATCH_SIZE, limitedSelection.productIds.length)}/${limitedSelection.productIds.length})`,
+        )
+      }
+    } else {
+      let lastProductId = 0
+
+      while (true) {
+        const batch = (await db.query.products.findMany({
+          where: and(eq(products.status, 'published'), gt(products.id, lastProductId)),
+          with: {
+            manufacturer: true,
+            category: true,
+            zigbeeDetails: true,
+            zwaveDetails: true,
+            compatibility: {
+              with: {
+                hub: true,
+              },
+            },
+          },
+          orderBy: (products, { asc }) => [asc(products.id)],
+          limit: PRODUCT_EXPORT_BATCH_SIZE,
+        })) as PublishedProductRecord[]
+
+        if (batch.length === 0) {
+          break
+        }
+
+        for (const product of batch) {
+          await processProduct(product)
+        }
+
+        lastProductId = batch[batch.length - 1].id
+        logger.info(
+          `Prepared ${productSummaries.length} product exports so far (last product id: ${lastProductId})`,
+        )
+      }
     }
 
     const sortSlugsByName = (slugs: string[]) =>
@@ -832,7 +936,7 @@ export class ExportService {
         updatedAt: hub.latestUpdatedAt?.toISOString() ?? null,
         deviceSlugs: sortSlugsByName(hub.deviceSlugs),
       }))
-      .filter((hub) => hub.deviceCount > 0)
+      .filter((hub) => mode === 'limited' || hub.deviceCount > 0)
       .sort((left, right) => left.name.localeCompare(right.name))
 
     const hubSummaries: HubExportSummary[] = hubDetails.map(
@@ -857,7 +961,7 @@ export class ExportService {
         directDeviceSlugs: sortSlugsByName(category.directDeviceSlugs),
         deviceSlugs: sortSlugsByName(category.deviceSlugs),
       }))
-      .filter((category) => category.deviceCount > 0)
+      .filter((category) => mode === 'limited' || category.deviceCount > 0)
       .sort((left, right) => left.path.localeCompare(right.path))
 
     const categorySummaries: CategoryExportSummary[] = categoryDetails.map(
@@ -977,6 +1081,172 @@ export class ExportService {
       site,
       sitemap,
     }
+  }
+
+  private async buildLimitedExportSelection(): Promise<LimitedExportSelection> {
+    const candidates: LimitedExportCandidate[] = []
+    let lastProductId = 0
+
+    while (true) {
+      const batch = (await db.query.products.findMany({
+        where: and(eq(products.status, 'published'), gt(products.id, lastProductId)),
+        columns: {
+          id: true,
+          name: true,
+          categoryId: true,
+          primaryProtocol: true,
+          updatedAt: true,
+        },
+        with: {
+          manufacturer: {
+            columns: {
+              slug: true,
+              name: true,
+            },
+          },
+        },
+        orderBy: (products, { asc }) => [asc(products.id)],
+        limit: PRODUCT_EXPORT_BATCH_SIZE,
+      })) as LimitedExportCandidate[]
+
+      if (batch.length === 0) {
+        break
+      }
+
+      candidates.push(...batch)
+      lastProductId = batch[batch.length - 1].id
+    }
+
+    const manufacturerCounts = new Map<string, { count: number; name: string }>()
+
+    for (const candidate of candidates) {
+      if (!candidate.manufacturer) {
+        continue
+      }
+
+      const current = manufacturerCounts.get(candidate.manufacturer.slug)
+      if (current) {
+        current.count += 1
+      } else {
+        manufacturerCounts.set(candidate.manufacturer.slug, {
+          count: 1,
+          name: candidate.manufacturer.name,
+        })
+      }
+    }
+
+    const topManufacturerSlugs = Array.from(manufacturerCounts.entries())
+      .sort((left, right) => {
+        const countDiff = right[1].count - left[1].count
+        if (countDiff !== 0) {
+          return countDiff
+        }
+
+        const nameDiff = left[1].name.localeCompare(right[1].name)
+        if (nameDiff !== 0) {
+          return nameDiff
+        }
+
+        return left[0].localeCompare(right[0])
+      })
+      .slice(0, LIMITED_EXPORT_MAX_MANUFACTURERS)
+      .map(([slug]) => slug)
+
+    const manufacturerSlugs = new Set(topManufacturerSlugs)
+    const limitedCandidates = candidates.filter((candidate) =>
+      manufacturerSlugs.has(candidate.manufacturer?.slug ?? ''),
+    )
+    const compatibilityReferenceCounts = new Map<number, number>()
+
+    for (let index = 0; index < limitedCandidates.length; index += PRODUCT_EXPORT_BATCH_SIZE) {
+      const batchIds = limitedCandidates
+        .slice(index, index + PRODUCT_EXPORT_BATCH_SIZE)
+        .map((candidate) => candidate.id)
+
+      const batchCounts = await db
+        .select({
+          productId: deviceCompatibility.productId,
+          compatibilityReferenceCount: count(),
+        })
+        .from(deviceCompatibility)
+        .where(inArray(deviceCompatibility.productId, batchIds))
+        .groupBy(deviceCompatibility.productId)
+
+      for (const row of batchCounts) {
+        compatibilityReferenceCounts.set(
+          row.productId,
+          Number(row.compatibilityReferenceCount ?? 0),
+        )
+      }
+    }
+
+    const deviceCountsByCombo = new Map<string, number>()
+    const productIds: number[] = []
+
+    const rankedCandidates = limitedCandidates
+      .map((candidate) => ({
+        ...candidate,
+        compatibilityReferenceCount: compatibilityReferenceCounts.get(candidate.id) ?? 0,
+      }))
+      .sort((left, right) => {
+        const compatibilityDiff =
+          right.compatibilityReferenceCount - left.compatibilityReferenceCount
+        if (compatibilityDiff !== 0) {
+          return compatibilityDiff
+        }
+
+        const updatedDiff = right.updatedAt.getTime() - left.updatedAt.getTime()
+        if (updatedDiff !== 0) {
+          return updatedDiff
+        }
+
+        const nameDiff = left.name.localeCompare(right.name)
+        if (nameDiff !== 0) {
+          return nameDiff
+        }
+
+        return left.id - right.id
+      })
+
+    for (const candidate of rankedCandidates) {
+      const manufacturerSlug = candidate.manufacturer?.slug
+      if (!manufacturerSlug) {
+        continue
+      }
+
+      const comboKey = this.buildLimitedComboKey(
+        manufacturerSlug,
+        candidate.categoryId,
+        candidate.primaryProtocol,
+      )
+      const currentCount = deviceCountsByCombo.get(comboKey) ?? 0
+
+      if (currentCount >= LIMITED_EXPORT_MAX_DEVICES_PER_COMBO) {
+        continue
+      }
+
+      deviceCountsByCombo.set(comboKey, currentCount + 1)
+      productIds.push(candidate.id)
+    }
+
+    productIds.sort((left, right) => left - right)
+
+    return {
+      manufacturerSlugs,
+      productIds,
+    }
+  }
+
+  private buildLimitedComboKey(
+    manufacturerSlug: string,
+    categoryId: number | null,
+    primaryProtocol: string | null,
+  ): string {
+    return [
+      manufacturerSlug,
+      categoryId ?? UNCATEGORIZED_LIMITED_GROUP,
+      primaryProtocol ?? UNKNOWN_PROTOCOL_LIMITED_GROUP,
+    ].join('::')
   }
 
   private async triggerDeployHook(): Promise<void> {

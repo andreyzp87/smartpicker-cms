@@ -22,6 +22,13 @@
       "when": 1773355200000,
       "tag": "0002_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1774030200000,
+      "tag": "0003_compatibility_inferred",
+      "breakpoints": true
     }
   ]
 }

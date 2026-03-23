@@ -16,6 +16,7 @@ export const PRODUCT_STATUSES = {
 export const COMPATIBILITY_STATUSES = {
   verified: { name: 'Verified', color: 'green' },
   reported: { name: 'Reported', color: 'blue' },
+  inferred: { name: 'Inferred', color: '#d97706' },
   untested: { name: 'Untested', color: 'gray' },
   incompatible: { name: 'Incompatible', color: 'red' },
 } as const

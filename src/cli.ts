@@ -285,13 +285,28 @@ program
     'Export type (products, manufacturers, categories, hubs, protocols, all)',
     'all',
   )
-  .action(async (options: { type: string }) => {
+  .option(
+    '--limited',
+    'Limit export to the top 20 manufacturers and up to 10 devices per manufacturer in each category/protocol combo',
+  )
+  .action(async (options: { type: string; limited?: boolean }) => {
     try {
-      console.log(`📦 Starting export generation (${options.type})...\n`)
+      const exportOptions = options.limited ? { mode: 'limited' as const } : undefined
+      console.log(
+        `📦 Starting ${options.limited ? 'limited ' : ''}export generation (${options.type})...\n`,
+      )
+
+      if (options.limited) {
+        console.log('   Keeping all hubs, protocols, and categories')
+        console.log(
+          '   Limiting devices to the top 20 manufacturers, with up to 10 devices per category/protocol combo',
+        )
+        console.log('')
+      }
 
       switch (options.type) {
         case 'products': {
-          const result = await exportService.generateProductsExport()
+          const result = await exportService.generateProductsExport(undefined, exportOptions)
           console.log(`✅ Products export complete!`)
           console.log(`   Count: ${result.count}`)
           console.log(`   URL: ${result.url}`)
@@ -299,7 +314,7 @@ program
         }
 
         case 'manufacturers': {
-          const result = await exportService.generateManufacturersExport()
+          const result = await exportService.generateManufacturersExport(undefined, exportOptions)
           console.log(`✅ Manufacturers export complete!`)
           console.log(`   Count: ${result.count}`)
           console.log(`   URL: ${result.url}`)
@@ -307,7 +322,7 @@ program
         }
 
         case 'categories': {
-          const result = await exportService.generateCategoriesExport()
+          const result = await exportService.generateCategoriesExport(undefined, exportOptions)
           console.log(`✅ Categories export complete!`)
           console.log(`   Count: ${result.count}`)
           console.log(`   URL: ${result.url}`)
@@ -315,7 +330,7 @@ program
         }
 
         case 'hubs': {
-          const result = await exportService.generateHubsExport()
+          const result = await exportService.generateHubsExport(undefined, exportOptions)
           console.log(`✅ Hubs export complete!`)
           console.log(`   Count: ${result.count}`)
           console.log(`   URL: ${result.url}`)
@@ -323,7 +338,7 @@ program
         }
 
         case 'protocols': {
-          const result = await exportService.generateProtocolsExport()
+          const result = await exportService.generateProtocolsExport(undefined, exportOptions)
           console.log(`✅ Protocols export complete!`)
           console.log(`   Count: ${result.count}`)
           console.log(`   URL: ${result.url}`)
@@ -331,7 +346,7 @@ program
         }
 
         case 'all': {
-          const result = await exportService.generateAllExports()
+          const result = await exportService.generateAllExports(exportOptions)
           console.log(`✅ All exports complete!`)
           console.log(`   Products: ${result.products.count}`)
           console.log(`   Manufacturers: ${result.manufacturers.count}`)

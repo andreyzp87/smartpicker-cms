@@ -1,53 +1,58 @@
 import { db } from '../db/client'
-import { products, rawImports } from '../db/schema'
-import { eq } from 'drizzle-orm'
-import { createCompatibilityRecords } from './compatibility'
+import { rawImports } from '../db/schema'
+import { and, inArray, isNotNull } from 'drizzle-orm'
+import {
+  createCompatibilityRecords,
+  createSourceBackedCompatibilityRecords,
+  extractCompatibilityCodes,
+} from './compatibility'
 import { logger } from '../lib/logger'
-
-function getCompatibilityCodes(value: unknown): string[] {
-  if (
-    typeof value === 'object' &&
-    value !== null &&
-    'compatible' in value &&
-    Array.isArray(value.compatible)
-  ) {
-    return value.compatible.filter((item): item is string => typeof item === 'string')
-  }
-
-  return []
-}
 
 /**
  * Backfill compatibility records for products from Blakadder source
  * that have compatible data in their raw imports
  */
 export async function backfillCompatibility(): Promise<{ processed: number; created: number }> {
-  // Get all products from Blakadder source
-  const blakadderProducts = await db
+  // Walk all linked source imports that can contribute compatibility.
+  const linkedImports = await db
     .select({
-      productId: products.id,
+      productId: rawImports.productId,
       rawImportId: rawImports.id,
+      source: rawImports.source,
       compatible: rawImports.data,
     })
-    .from(products)
-    .innerJoin(rawImports, eq(products.primarySourceId, rawImports.id))
-    .where(eq(rawImports.source, 'blakadder'))
+    .from(rawImports)
+    .where(
+      and(
+        isNotNull(rawImports.productId),
+        inArray(rawImports.source, ['blakadder', 'zigbee2mqtt', 'zwave-js']),
+      ),
+    )
 
   let processed = 0
   let totalCreated = 0
 
-  for (const product of blakadderProducts) {
-    const compatible = getCompatibilityCodes(product.compatible)
-
-    if (compatible.length > 0) {
-      const created = await createCompatibilityRecords(product.productId, compatible)
-      totalCreated += created
+  for (const rawImport of linkedImports) {
+    if (rawImport.productId === null) {
+      processed++
+      continue
     }
+
+    if (rawImport.source === 'blakadder') {
+      const compatible = extractCompatibilityCodes(rawImport.compatible)
+
+      if (compatible.length > 0) {
+        const created = await createCompatibilityRecords(rawImport.productId, compatible)
+        totalCreated += created
+      }
+    }
+
+    totalCreated += await createSourceBackedCompatibilityRecords(rawImport.productId, rawImport.source)
 
     processed++
 
     if (processed % 100 === 0) {
-      logger.info({ processed, total: blakadderProducts.length }, 'Backfill progress')
+      logger.info({ processed, total: linkedImports.length }, 'Backfill progress')
     }
   }
 

@@ -197,7 +197,9 @@ async function seed() {
     console.log('\n🏠 Seeding hubs...')
 
     // Get manufacturer IDs
-    const getManufacturerId = async (slug: string) => {
+    const getManufacturerId = async (slug: string | null) => {
+      if (!slug) return null
+
       const [mfg] = await db
         .select()
         .from(manufacturers)
@@ -272,6 +274,30 @@ async function seed() {
         manufacturerSlug: 'apple',
         protocols: ['matter', 'wifi', 'thread', 'bluetooth'],
         description: 'Smart speaker with Thread border router and Matter support',
+      },
+      {
+        name: 'deCONZ / Phoscon',
+        manufacturerSlug: null,
+        protocols: ['zigbee'],
+        description: 'deCONZ and Phoscon Zigbee platform for community-reported compatibility data',
+      },
+      {
+        name: 'Domoticz',
+        manufacturerSlug: null,
+        protocols: ['zigbee'],
+        description: 'Domoticz smart home platform for community-reported compatibility data',
+      },
+      {
+        name: 'ioBroker',
+        manufacturerSlug: null,
+        protocols: ['zigbee'],
+        description: 'ioBroker smart home platform for community-reported compatibility data',
+      },
+      {
+        name: 'SONOFF iHost',
+        manufacturerSlug: 'sonoff',
+        protocols: ['zigbee'],
+        description: 'SONOFF iHost local smart home controller for community-reported compatibility data',
       },
     ]
 

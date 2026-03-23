@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const compatibilityStatusSchema = z.enum([
   'verified',
   'reported',
+  'inferred',
   'untested',
   'incompatible',
 ])

@@ -30,6 +30,7 @@ export const productStatusEnum = pgEnum('product_status', ['draft', 'published',
 export const compatibilityStatusEnum = pgEnum('compatibility_status', [
   'verified',
   'reported',
+  'inferred',
   'untested',
   'incompatible',
 ])
