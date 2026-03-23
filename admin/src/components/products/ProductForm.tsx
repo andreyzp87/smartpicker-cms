@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
-import { productCreateSchema, type ProductStatus } from '@/shared/schemas'
+import { productCreateSchema, type ProductRole, type ProductStatus } from '@/shared/schemas'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -48,10 +48,11 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
 
   const protocol = watch('primaryProtocol')
   const status = watch('status')
+  const productRole = watch('productRole')
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <div>
           <Label htmlFor="name">Name</Label>
           <Input id="name" {...register('name')} />
@@ -73,13 +74,16 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
         <div>
           <Label htmlFor="manufacturerId">Manufacturer</Label>
           <Select
-            value={watch('manufacturerId')?.toString()}
-            onValueChange={(value) => setValue('manufacturerId', Number(value))}
+            value={watch('manufacturerId')?.toString() ?? 'none'}
+            onValueChange={(value) =>
+              setValue('manufacturerId', value === 'none' ? null : Number(value))
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Select manufacturer" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">None</SelectItem>
               {manufacturers?.map((m) => (
                 <SelectItem key={m.id} value={m.id.toString()}>
                   {m.name}
@@ -95,13 +99,14 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
         <div>
           <Label htmlFor="categoryId">Category</Label>
           <Select
-            value={watch('categoryId')?.toString()}
-            onValueChange={(value) => setValue('categoryId', Number(value))}
+            value={watch('categoryId')?.toString() ?? 'none'}
+            onValueChange={(value) => setValue('categoryId', value === 'none' ? null : Number(value))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="none">None</SelectItem>
               {categories?.map((c) => (
                 <SelectItem key={c.id} value={c.id.toString()}>
                   {c.name}
@@ -137,6 +142,25 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
             <p className="text-sm text-red-600 mt-1">{errors.primaryProtocol.message}</p>
           )}
         </div>
+
+        <div>
+          <Label htmlFor="productRole">Product Role</Label>
+          <Select
+            value={productRole ?? 'endpoint'}
+            onValueChange={(value) => setValue('productRole', value as ProductRole)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="endpoint">Endpoint</SelectItem>
+              <SelectItem value="infrastructure">Infrastructure</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="mt-1 text-xs text-slate-500">
+            Use infrastructure for coordinators, adapters, and controller hardware.
+          </p>
+        </div>
       </div>
 
       <div className="space-y-3">
@@ -166,7 +190,7 @@ export function ProductForm({ initialData, onSubmit, isLoading }: ProductFormPro
         <textarea
           id="description"
           {...register('description')}
-          className="w-full min-h-[100px] px-3 py-2 border rounded-md"
+          className="min-h-[120px] w-full rounded-xl border border-input bg-white px-3 py-2 text-sm shadow-sm"
         />
       </div>
 

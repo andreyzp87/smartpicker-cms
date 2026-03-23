@@ -7,7 +7,7 @@ import {
   paginationSchema,
 } from '../shared/schemas'
 import { db } from '../db/client'
-import { categories, deviceCompatibility, products } from '../db/schema'
+import { categories, productHubCompatibility, products } from '../db/schema'
 import { and, or, eq, ilike, asc, desc, count, inArray } from 'drizzle-orm'
 
 type ProductPublishRow = {
@@ -87,15 +87,15 @@ async function buildBulkPublishSnapshot() {
   const [eligibleHubRows, publishedHubRows] = await Promise.all([
     eligibleDraftProductIds.length > 0
       ? db
-          .select({ hubId: deviceCompatibility.hubId })
-          .from(deviceCompatibility)
-          .where(inArray(deviceCompatibility.productId, eligibleDraftProductIds))
+          .select({ hubId: productHubCompatibility.hubId })
+          .from(productHubCompatibility)
+          .where(inArray(productHubCompatibility.productId, eligibleDraftProductIds))
       : Promise.resolve([]),
     publishedProductIds.length > 0
       ? db
-          .select({ hubId: deviceCompatibility.hubId })
-          .from(deviceCompatibility)
-          .where(inArray(deviceCompatibility.productId, publishedProductIds))
+          .select({ hubId: productHubCompatibility.hubId })
+          .from(productHubCompatibility)
+          .where(inArray(productHubCompatibility.productId, publishedProductIds))
       : Promise.resolve([]),
   ])
 
@@ -250,6 +250,12 @@ export const productsRouter = router({
         with: {
           manufacturer: true,
           category: true,
+          primarySource: true,
+          sources: {
+            with: {
+              rawImport: true,
+            },
+          },
           zigbeeDetails: true,
           zwaveDetails: true,
         },
@@ -264,6 +270,12 @@ export const productsRouter = router({
       with: {
         manufacturer: true,
         category: true,
+        primarySource: true,
+        sources: {
+          with: {
+            rawImport: true,
+          },
+        },
         zigbeeDetails: true,
         zwaveDetails: true,
       },

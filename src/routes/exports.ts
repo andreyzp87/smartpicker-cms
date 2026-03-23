@@ -88,6 +88,48 @@ export const exportsRouter = router({
   }),
 
   /**
+   * Generate integrations export only
+   */
+  generateIntegrations: protectedProcedure.mutation(async () => {
+    try {
+      const result = await exportService.generateIntegrationsExport()
+
+      return {
+        success: true,
+        message: `${result.count} integrations exported`,
+        ...result,
+      }
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to generate integrations export',
+        cause: error,
+      })
+    }
+  }),
+
+  /**
+   * Generate platforms export only
+   */
+  generatePlatforms: protectedProcedure.mutation(async () => {
+    try {
+      const result = await exportService.generatePlatformsExport()
+
+      return {
+        success: true,
+        message: `${result.count} platforms exported`,
+        ...result,
+      }
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to generate platforms export',
+        cause: error,
+      })
+    }
+  }),
+
+  /**
    * Generate hubs export only
    */
   generateHubs: protectedProcedure.mutation(async () => {
@@ -124,6 +166,48 @@ export const exportsRouter = router({
       throw new TRPCError({
         code: 'INTERNAL_SERVER_ERROR',
         message: 'Failed to generate protocols export',
+        cause: error,
+      })
+    }
+  }),
+
+  /**
+   * Generate catalog export only
+   */
+  generateCatalog: protectedProcedure.mutation(async () => {
+    try {
+      const result = await exportService.generateCatalogExport()
+
+      return {
+        success: true,
+        message: `${result.count} catalog records exported`,
+        ...result,
+      }
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to generate catalog export',
+        cause: error,
+      })
+    }
+  }),
+
+  /**
+   * Generate search export only
+   */
+  generateSearch: protectedProcedure.mutation(async () => {
+    try {
+      const result = await exportService.generateSearchExport()
+
+      return {
+        success: true,
+        message: `${result.count} search records exported`,
+        ...result,
+      }
+    } catch (error) {
+      throw new TRPCError({
+        code: 'INTERNAL_SERVER_ERROR',
+        message: 'Failed to generate search export',
         cause: error,
       })
     }

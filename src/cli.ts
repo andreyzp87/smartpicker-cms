@@ -1,7 +1,13 @@
 import { Command } from 'commander'
 import { getImporter } from './importers'
 import { storeRawImports } from './importers/service'
-import { transformAllUnprocessed, backfillCompatibility, backfillCategories } from './processors'
+import {
+  backfillSafeAutoPublishProducts,
+  transformAllUnprocessed,
+  backfillCompatibility,
+  backfillCompatibilityApprovals,
+  backfillCategories,
+} from './processors'
 import { deduplicateProducts, getDuplicateStats } from './deduplication'
 import { exportService } from './services/export.service'
 import { db } from './db/client'
@@ -74,11 +80,13 @@ program
       const created = results.filter((r) => r.created).length
       const updated = results.filter((r) => !r.created).length
       const totalCompatibility = results.reduce((sum, r) => sum + r.compatibilityRecordsCreated, 0)
+      const autoPublished = results.filter((r) => r.autoPublished).length
 
       console.log(`\n✅ Transformation complete!`)
       console.log(`   Products created: ${created}`)
       console.log(`   Products updated: ${updated}`)
       console.log(`   Compatibility records created: ${totalCompatibility}`)
+      console.log(`   Products auto-published: ${autoPublished}`)
       console.log(`   Total processed: ${results.length}`)
 
       process.exit(0)
@@ -118,15 +126,58 @@ program
     try {
       console.log('🔄 Backfilling compatibility records...')
 
-      const { processed, created } = await backfillCompatibility()
+      const { processed, created, autoPublished } = await backfillCompatibility()
 
       console.log(`\n✅ Backfill complete!`)
       console.log(`   Products processed: ${processed}`)
       console.log(`   Compatibility records created: ${created}`)
+      console.log(`   Products auto-published: ${autoPublished}`)
 
       process.exit(0)
     } catch (error) {
       console.error('❌ Backfill failed:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('backfill-compatibility-approvals')
+  .description('Auto-approve source-backed supported compatibility rows that match MVP policy')
+  .action(async () => {
+    try {
+      console.log('🔄 Backfilling compatibility approvals...')
+
+      const { eligible, approved } = await backfillCompatibilityApprovals()
+
+      console.log(`\n✅ Compatibility approval backfill complete!`)
+      console.log(`   Eligible rows: ${eligible}`)
+      console.log(`   Approved rows: ${approved}`)
+
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Compatibility approval backfill failed:')
+      console.error(error)
+      process.exit(1)
+    }
+  })
+
+program
+  .command('backfill-auto-publish')
+  .description('Publish existing draft products that match the safe MVP auto-publish rule')
+  .action(async () => {
+    try {
+      console.log('🔄 Backfilling safe auto-publish products...')
+
+      const { eligible, published } = await backfillSafeAutoPublishProducts()
+
+      console.log(`\n✅ Safe auto-publish backfill complete!`)
+      console.log(`   Eligible draft products: ${eligible}`)
+      console.log(`   Published products: ${published}`)
+
+      process.exit(0)
+    } catch (error) {
+      console.error('❌ Safe auto-publish backfill failed:')
       console.error(error)
       process.exit(1)
     }
@@ -282,7 +333,7 @@ program
   .description('Generate JSON exports for public frontend')
   .option(
     '-t, --type <type>',
-    'Export type (products, manufacturers, categories, hubs, protocols, all)',
+    'Export type (products, manufacturers, categories, integrations, platforms, hubs, protocols, catalog, search, all)',
     'all',
   )
   .option(
@@ -297,7 +348,7 @@ program
       )
 
       if (options.limited) {
-        console.log('   Keeping all hubs, protocols, and categories')
+        console.log('   Keeping all published integrations, platforms, hubs, protocols, and categories')
         console.log(
           '   Limiting devices to the top 20 manufacturers, with up to 10 devices per category/protocol combo',
         )
@@ -329,6 +380,22 @@ program
           break
         }
 
+        case 'integrations': {
+          const result = await exportService.generateIntegrationsExport(undefined, exportOptions)
+          console.log(`✅ Integrations export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'platforms': {
+          const result = await exportService.generatePlatformsExport(undefined, exportOptions)
+          console.log(`✅ Platforms export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
         case 'hubs': {
           const result = await exportService.generateHubsExport(undefined, exportOptions)
           console.log(`✅ Hubs export complete!`)
@@ -345,14 +412,34 @@ program
           break
         }
 
+        case 'catalog': {
+          const result = await exportService.generateCatalogExport(undefined, exportOptions)
+          console.log(`✅ Catalog export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
+        case 'search': {
+          const result = await exportService.generateSearchExport(undefined, exportOptions)
+          console.log(`✅ Search export complete!`)
+          console.log(`   Count: ${result.count}`)
+          console.log(`   URL: ${result.url}`)
+          break
+        }
+
         case 'all': {
           const result = await exportService.generateAllExports(exportOptions)
           console.log(`✅ All exports complete!`)
           console.log(`   Products: ${result.products.count}`)
           console.log(`   Manufacturers: ${result.manufacturers.count}`)
           console.log(`   Categories: ${result.categories.count}`)
+          console.log(`   Integrations: ${result.integrations.count}`)
+          console.log(`   Platforms: ${result.platforms.count}`)
           console.log(`   Hubs: ${result.hubs.count}`)
           console.log(`   Protocols: ${result.protocols.count}`)
+          console.log(`   Catalog records: ${result.catalog.count}`)
+          console.log(`   Search records: ${result.search.count}`)
           console.log(`   Site metadata: ${result.site.count}`)
           console.log(`   Sitemap URLs: ${result.sitemap.count}`)
           break
@@ -360,7 +447,9 @@ program
 
         default:
           console.error(`❌ Unknown export type: ${options.type}`)
-          console.error(`   Valid types: products, manufacturers, categories, hubs, protocols, all`)
+          console.error(
+            `   Valid types: products, manufacturers, categories, integrations, platforms, hubs, protocols, catalog, search, all`,
+          )
           process.exit(1)
       }
 

@@ -1,9 +1,10 @@
 import { db } from '../db/client'
 import {
+  productHubCompatibility,
+  productIntegrationCompatibility,
+  productSources,
   products,
   rawImports,
-  productSources,
-  deviceCompatibility,
   zigbeeDetails,
   zwaveDetails,
 } from '../db/schema'
@@ -83,9 +84,14 @@ export async function deduplicateProducts(
     // Step 2: Migrate compatibility records from duplicates to canonical
     for (const duplicate of duplicates) {
       await db
-        .update(deviceCompatibility)
+        .update(productIntegrationCompatibility)
         .set({ productId: canonical.id })
-        .where(eq(deviceCompatibility.productId, duplicate.id))
+        .where(eq(productIntegrationCompatibility.productId, duplicate.id))
+
+      await db
+        .update(productHubCompatibility)
+        .set({ productId: canonical.id })
+        .where(eq(productHubCompatibility.productId, duplicate.id))
     }
 
     // Step 3: Create product_sources entries for all sources

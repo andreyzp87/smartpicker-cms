@@ -23,4 +23,5 @@ export interface ProcessResult {
   productId: number
   created: boolean
   compatibilityRecordsCreated: number
+  autoPublished: boolean
 }

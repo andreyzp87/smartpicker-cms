@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1767865193564,
-      "tag": "0000_initial_migration",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1767954796626,
-      "tag": "0001_clear_talos",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1773355200000,
-      "tag": "0002_auth",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1774030200000,
-      "tag": "0003_compatibility_inferred",
+      "when": 1774281247616,
+      "tag": "0000_initial_schema",
       "breakpoints": true
     }
   ]

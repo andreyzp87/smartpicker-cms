@@ -7,6 +7,7 @@ import { extractProduct } from './extractors'
 import { resolveCategoryIdForImport } from './categories'
 import { findOrCreateManufacturer } from './manufacturers'
 import { createCompatibilityRecords, createSourceBackedCompatibilityRecords } from './compatibility'
+import { autoPublishProductIfEligible } from './publishing'
 import { ProcessResult } from './types'
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -167,18 +168,23 @@ export async function transformRawImport(rawImportId: number): Promise<ProcessRe
     compatibilityRecordsCreated = await createCompatibilityRecords(
       productId,
       extracted.compatibleWith,
+      { sourceRecordKey: `${rawImport.source}:${rawImport.sourceId}` },
     )
   }
 
   compatibilityRecordsCreated += await createSourceBackedCompatibilityRecords(
     productId,
     rawImport.source,
+    { sourceRecordKey: `${rawImport.source}:${rawImport.sourceId}` },
   )
+
+  const autoPublished = await autoPublishProductIfEligible(productId)
 
   return {
     productId,
     created,
     compatibilityRecordsCreated,
+    autoPublished,
   }
 }
 

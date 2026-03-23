@@ -5,6 +5,8 @@ export const PROTOCOLS = {
   wifi: { name: 'WiFi', color: 'green' },
   thread: { name: 'Thread', color: 'orange' },
   bluetooth: { name: 'Bluetooth', color: 'cyan' },
+  proprietary: { name: 'Proprietary', color: 'gray' },
+  multi: { name: 'Multi-Protocol', color: 'slate' },
 } as const
 
 export const PRODUCT_STATUSES = {
@@ -15,8 +17,8 @@ export const PRODUCT_STATUSES = {
 
 export const COMPATIBILITY_STATUSES = {
   verified: { name: 'Verified', color: 'green' },
+  supported: { name: 'Supported', color: 'emerald' },
   reported: { name: 'Reported', color: 'blue' },
-  inferred: { name: 'Inferred', color: '#d97706' },
   untested: { name: 'Untested', color: 'gray' },
   incompatible: { name: 'Incompatible', color: 'red' },
 } as const

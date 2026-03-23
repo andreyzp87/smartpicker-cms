@@ -1,4 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table'
+import { formatDistanceToNow } from 'date-fns'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { MoreHorizontal, Pencil, Trash } from 'lucide-react'
@@ -20,10 +21,14 @@ type Product = {
   name: string
   model: string | null
   slug: string
+  manufacturer: string | null
+  category: string | null
   primaryProtocol: string | null
+  productRole: 'endpoint' | 'infrastructure'
+  integrationCompatibilityCount: number
+  hubCompatibilityCount: number
   status: 'draft' | 'published' | 'archived'
-  manufacturerId: number | null
-  createdAt: string
+  updatedAt: string
 }
 
 interface ProductsTableProps {
@@ -48,17 +53,34 @@ export function ProductsTable({ products }: ProductsTableProps) {
   const columns: ColumnDef<Product>[] = [
     {
       accessorKey: 'name',
-      header: 'Name',
+      header: 'Product',
+      cell: ({ row }) => (
+        <div>
+          <p className="font-medium text-slate-950">{row.original.name}</p>
+          <p className="text-xs text-slate-500">{row.original.slug}</p>
+        </div>
+      ),
     },
     {
       accessorKey: 'model',
       header: 'Model',
     },
     {
+      accessorKey: 'manufacturer',
+      header: 'Manufacturer',
+      cell: ({ row }) => row.original.manufacturer ?? <span className="text-slate-400">—</span>,
+    },
+    {
+      accessorKey: 'category',
+      header: 'Category',
+      cell: ({ row }) => row.original.category ?? <span className="text-slate-400">—</span>,
+    },
+    {
       accessorKey: 'primaryProtocol',
       header: 'Protocol',
       cell: ({ row }) => {
-        const protocol = row.getValue('primaryProtocol') as string
+        const protocol = row.original.primaryProtocol
+        if (!protocol) return <span className="text-slate-400">—</span>
         const protocolInfo = PROTOCOLS[protocol as keyof typeof PROTOCOLS]
         return (
           <Badge variant="outline" style={{ borderColor: protocolInfo?.color }}>
@@ -68,13 +90,43 @@ export function ProductsTable({ products }: ProductsTableProps) {
       },
     },
     {
+      accessorKey: 'productRole',
+      header: 'Role',
+      cell: ({ row }) => (
+        <Badge variant="outline" className="capitalize">
+          {row.original.productRole}
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: 'integrationCompatibilityCount',
+      header: 'Integration rows',
+    },
+    {
+      accessorKey: 'hubCompatibilityCount',
+      header: 'Hub rows',
+    },
+    {
       accessorKey: 'status',
       header: 'Status',
       cell: ({ row }) => {
-        const status = row.getValue('status') as string
+        const status = row.original.status
         const statusInfo = PRODUCT_STATUSES[status as keyof typeof PRODUCT_STATUSES]
-        return <Badge style={{ backgroundColor: statusInfo?.color }}>{status}</Badge>
+        return (
+          <Badge
+            variant="outline"
+            className="border-transparent text-white"
+            style={{ backgroundColor: statusInfo?.color }}
+          >
+            {statusInfo?.name ?? status}
+          </Badge>
+        )
       },
+    },
+    {
+      accessorKey: 'updatedAt',
+      header: 'Updated',
+      cell: ({ row }) => formatDistanceToNow(new Date(row.original.updatedAt), { addSuffix: true }),
     },
     {
       id: 'actions',

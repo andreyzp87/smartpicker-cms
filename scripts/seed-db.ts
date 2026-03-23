@@ -1,5 +1,14 @@
 import { db } from '../src/db/client.js'
-import { manufacturers, categories, hubs } from '../src/db/schema.js'
+import {
+  categories,
+  commercialHubs,
+  integrationHardwareSupport,
+  integrations,
+  manufacturers,
+  platformIntegrations,
+  platforms,
+  products,
+} from '../src/db/schema.js'
 import slugify from 'slugify'
 import { eq } from 'drizzle-orm'
 
@@ -191,11 +200,6 @@ async function seed() {
     }
     console.log(`✓ Seeded ${categoriesCreated} categories`)
 
-    // ============================================
-    // 3. SEED HUBS
-    // ============================================
-    console.log('\n🏠 Seeding hubs...')
-
     // Get manufacturer IDs
     const getManufacturerId = async (slug: string | null) => {
       if (!slug) return null
@@ -207,124 +211,406 @@ async function seed() {
         .limit(1)
       return mfg?.id || null
     }
+    // ============================================
+    // 3. SEED PLATFORMS, INTEGRATIONS, AND COMMERCIAL HUBS
+    // ============================================
+    console.log('\n🧩 Seeding schema entities...')
 
-    const hubData = [
+    const getCategoryId = async (slug: string) => {
+      const [category] = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.slug, slug))
+        .limit(1)
+      return category?.id || null
+    }
+
+    const getPlatformId = async (slug: string) => {
+      const [platform] = await db.select().from(platforms).where(eq(platforms.slug, slug)).limit(1)
+      return platform?.id || null
+    }
+
+    const getIntegrationId = async (slug: string) => {
+      const [integration] = await db
+        .select()
+        .from(integrations)
+        .where(eq(integrations.slug, slug))
+        .limit(1)
+      return integration?.id || null
+    }
+
+    const platformData = [
       {
-        name: 'Home Assistant (Generic)',
+        slug: 'home-assistant',
+        name: 'Home Assistant',
+        kind: 'open_platform' as const,
         manufacturerSlug: 'home-assistant',
-        protocols: ['zigbee', 'zwave', 'matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'Open-source home automation platform with support for all major protocols',
+        website: 'https://www.home-assistant.io',
+        description: 'Open-source home automation platform.',
       },
       {
-        name: 'Home Assistant Yellow',
-        manufacturerSlug: 'home-assistant',
-        protocols: ['zigbee', 'zwave', 'matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'Official Home Assistant hardware with built-in Zigbee and Thread support',
-      },
-      {
-        name: 'Home Assistant Green',
-        manufacturerSlug: 'home-assistant',
-        protocols: ['zigbee', 'zwave', 'matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'Compact Home Assistant device with USB radio support',
-      },
-      {
-        name: 'SmartThings Hub v3',
-        manufacturerSlug: 'samsung-smartthings',
-        protocols: ['zigbee', 'zwave', 'wifi'],
-        description: 'Samsung SmartThings hub with Zigbee and Z-Wave support',
-      },
-      {
-        name: 'SmartThings Station',
-        manufacturerSlug: 'samsung-smartthings',
-        protocols: ['zigbee', 'matter', 'wifi', 'thread'],
-        description: 'Latest SmartThings hub with Matter support',
-      },
-      {
-        name: 'Hubitat Elevation',
-        manufacturerSlug: 'hubitat',
-        protocols: ['zigbee', 'zwave', 'wifi'],
-        description: 'Local smart home hub with Zigbee and Z-Wave support',
-      },
-      {
-        name: 'Homey Pro (2023)',
-        manufacturerSlug: 'athom',
-        protocols: ['zigbee', 'zwave', 'matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'All-in-one smart home hub with support for all major protocols',
-      },
-      {
-        name: 'Amazon Echo (4th Gen)',
-        manufacturerSlug: 'amazon',
-        protocols: ['zigbee', 'matter', 'wifi', 'bluetooth'],
-        description: 'Echo smart speaker with built-in Zigbee hub',
-      },
-      {
-        name: 'Amazon Echo Plus',
-        manufacturerSlug: 'amazon',
-        protocols: ['zigbee', 'wifi', 'bluetooth'],
-        description: 'Echo with built-in Zigbee smart home hub',
-      },
-      {
-        name: 'Google Nest Hub (2nd Gen)',
-        manufacturerSlug: 'google',
-        protocols: ['matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'Smart display with Thread border router and Matter support',
-      },
-      {
-        name: 'Apple HomePod mini',
-        manufacturerSlug: 'apple',
-        protocols: ['matter', 'wifi', 'thread', 'bluetooth'],
-        description: 'Smart speaker with Thread border router and Matter support',
-      },
-      {
-        name: 'deCONZ / Phoscon',
+        slug: 'openhab',
+        name: 'OpenHAB',
+        kind: 'open_platform' as const,
         manufacturerSlug: null,
-        protocols: ['zigbee'],
-        description: 'deCONZ and Phoscon Zigbee platform for community-reported compatibility data',
+        website: 'https://www.openhab.org',
+        description: 'Open-source smart home platform.',
       },
       {
+        slug: 'domoticz',
         name: 'Domoticz',
+        kind: 'open_platform' as const,
         manufacturerSlug: null,
-        protocols: ['zigbee'],
-        description: 'Domoticz smart home platform for community-reported compatibility data',
+        website: 'https://www.domoticz.com',
+        description:
+          'Open-source home automation platform with community Zigbee and Z-Wave integrations.',
       },
       {
+        slug: 'homey',
+        name: 'Homey',
+        kind: 'commercial_platform' as const,
+        manufacturerSlug: 'athom',
+        website: 'https://homey.app',
+        description: 'Commercial smart home platform by Athom.',
+      },
+      {
+        slug: 'iobroker',
         name: 'ioBroker',
+        kind: 'open_platform' as const,
         manufacturerSlug: null,
-        protocols: ['zigbee'],
-        description: 'ioBroker smart home platform for community-reported compatibility data',
-      },
-      {
-        name: 'SONOFF iHost',
-        manufacturerSlug: 'sonoff',
-        protocols: ['zigbee'],
-        description: 'SONOFF iHost local smart home controller for community-reported compatibility data',
+        website: 'https://www.iobroker.net',
+        description: 'Open-source automation platform with adapter-based integrations.',
       },
     ]
 
-    for (const hub of hubData) {
-      const slug = slugify(hub.name, { lower: true, strict: true })
-      const manufacturerId = await getManufacturerId(hub.manufacturerSlug)
+    for (const platform of platformData) {
+      const manufacturerId = await getManufacturerId(platform.manufacturerSlug)
 
       await db
-        .insert(hubs)
+        .insert(platforms)
         .values({
-          slug,
-          name: hub.name,
+          slug: platform.slug,
+          name: platform.name,
+          kind: platform.kind,
           manufacturerId,
-          protocolsSupported: hub.protocols,
-          description: hub.description,
+          website: platform.website,
+          description: platform.description,
+          status: 'published',
         })
         .onConflictDoUpdate({
-          target: hubs.slug,
+          target: platforms.slug,
           set: {
-            name: hub.name,
+            name: platform.name,
+            kind: platform.kind,
             manufacturerId,
-            protocolsSupported: hub.protocols,
-            description: hub.description,
+            website: platform.website,
+            description: platform.description,
+            status: 'published',
+            updatedAt: new Date(),
           },
         })
     }
-    console.log(`✓ Seeded ${hubData.length} hubs`)
+
+    const integrationData = [
+      {
+        slug: 'zigbee2mqtt',
+        name: 'Zigbee2MQTT',
+        integrationKind: 'protocol_stack' as const,
+        primaryProtocol: 'zigbee' as const,
+        manufacturerSlug: null,
+        website: 'https://www.zigbee2mqtt.io',
+        description: 'MQTT-based Zigbee integration.',
+      },
+      {
+        slug: 'zha',
+        name: 'ZHA',
+        integrationKind: 'native_component' as const,
+        primaryProtocol: 'zigbee' as const,
+        manufacturerSlug: 'home-assistant',
+        website: 'https://www.home-assistant.io/integrations/zha/',
+        description: 'Native Zigbee integration for Home Assistant.',
+      },
+      {
+        slug: 'deconz',
+        name: 'deCONZ',
+        integrationKind: 'bridge' as const,
+        primaryProtocol: 'zigbee' as const,
+        manufacturerSlug: null,
+        website: 'https://phoscon.de/en/conbee2/software',
+        description: 'deCONZ/Phoscon integration.',
+      },
+      {
+        slug: 'zwave-js',
+        name: 'Z-Wave JS',
+        integrationKind: 'protocol_stack' as const,
+        primaryProtocol: 'zwave' as const,
+        manufacturerSlug: null,
+        website: 'https://zwave-js.github.io',
+        description: 'Open-source Z-Wave software stack.',
+      },
+      {
+        slug: 'iobroker-zigbee',
+        name: 'ioBroker Zigbee',
+        integrationKind: 'addon' as const,
+        primaryProtocol: 'zigbee' as const,
+        manufacturerSlug: null,
+        website: 'https://github.com/ioBroker/ioBroker.zigbee',
+        description: 'ioBroker Zigbee integration imported from Blakadder compatibility data.',
+      },
+      {
+        slug: 'tasmota',
+        name: 'Tasmota',
+        integrationKind: 'bridge' as const,
+        primaryProtocol: 'zigbee' as const,
+        manufacturerSlug: null,
+        website: 'https://tasmota.github.io/docs/Zigbee/',
+        description:
+          'Tasmota Zigbee bridge and device integration imported from Blakadder compatibility data.',
+      },
+    ]
+
+    for (const integration of integrationData) {
+      const manufacturerId = await getManufacturerId(integration.manufacturerSlug)
+
+      await db
+        .insert(integrations)
+        .values({
+          slug: integration.slug,
+          name: integration.name,
+          integrationKind: integration.integrationKind,
+          primaryProtocol: integration.primaryProtocol,
+          manufacturerId,
+          website: integration.website,
+          description: integration.description,
+          status: 'published',
+        })
+        .onConflictDoUpdate({
+          target: integrations.slug,
+          set: {
+            name: integration.name,
+            integrationKind: integration.integrationKind,
+            primaryProtocol: integration.primaryProtocol,
+            manufacturerId,
+            website: integration.website,
+            description: integration.description,
+            status: 'published',
+            updatedAt: new Date(),
+          },
+        })
+    }
+
+    const commercialHubData = [
+      {
+        slug: 'smartthings',
+        name: 'SmartThings Hub',
+        manufacturerSlug: 'samsung-smartthings',
+        website: 'https://www.smartthings.com',
+        description: 'Samsung SmartThings commercial hub ecosystem.',
+      },
+      {
+        slug: 'hubitat',
+        name: 'Hubitat Elevation',
+        manufacturerSlug: 'hubitat',
+        website: 'https://hubitat.com',
+        description: 'Hubitat local automation hub.',
+      },
+      {
+        slug: 'aqara-hub',
+        name: 'Aqara Hub',
+        manufacturerSlug: 'aqara',
+        website: 'https://www.aqara.com',
+        description: 'Aqara commercial smart home hub.',
+      },
+    ]
+
+    for (const hub of commercialHubData) {
+      const manufacturerId = await getManufacturerId(hub.manufacturerSlug)
+
+      await db
+        .insert(commercialHubs)
+        .values({
+          slug: hub.slug,
+          name: hub.name,
+          manufacturerId,
+          website: hub.website,
+          description: hub.description,
+          status: 'published',
+        })
+        .onConflictDoUpdate({
+          target: commercialHubs.slug,
+          set: {
+            name: hub.name,
+            manufacturerId,
+            website: hub.website,
+            description: hub.description,
+            status: 'published',
+            updatedAt: new Date(),
+          },
+        })
+    }
+
+    const platformIntegrationData = [
+      {
+        platformSlug: 'home-assistant',
+        integrationSlug: 'zigbee2mqtt',
+        supportType: 'addon' as const,
+        notes: 'Common Home Assistant deployment path for Zigbee2MQTT.',
+      },
+      {
+        platformSlug: 'home-assistant',
+        integrationSlug: 'zha',
+        supportType: 'native' as const,
+        notes: null,
+      },
+      {
+        platformSlug: 'home-assistant',
+        integrationSlug: 'zwave-js',
+        supportType: 'addon' as const,
+        notes: null,
+      },
+      {
+        platformSlug: 'domoticz',
+        integrationSlug: 'zigbee2mqtt',
+        supportType: 'addon' as const,
+        notes: 'Community-supported Zigbee2MQTT deployment path for Domoticz.',
+      },
+      {
+        platformSlug: 'openhab',
+        integrationSlug: 'zwave-js',
+        supportType: 'addon' as const,
+        notes: 'Z-Wave JS is used as the Z-Wave backend for OpenHAB.',
+      },
+      {
+        platformSlug: 'iobroker',
+        integrationSlug: 'iobroker-zigbee',
+        supportType: 'addon' as const,
+        notes: 'Official ioBroker Zigbee adapter for coordinator-backed Zigbee support.',
+      },
+    ]
+
+    for (const link of platformIntegrationData) {
+      const platformId = await getPlatformId(link.platformSlug)
+      const integrationId = await getIntegrationId(link.integrationSlug)
+
+      if (!platformId || !integrationId) continue
+
+      await db
+        .insert(platformIntegrations)
+        .values({
+          platformId,
+          integrationId,
+          supportType: link.supportType,
+          notes: link.notes,
+        })
+        .onConflictDoUpdate({
+          target: [platformIntegrations.platformId, platformIntegrations.integrationId],
+          set: {
+            supportType: link.supportType,
+            notes: link.notes,
+            updatedAt: new Date(),
+          },
+        })
+    }
+
+    const gatewaysCategoryId = await getCategoryId('gateways')
+    const infrastructureProducts = [
+      {
+        slug: 'sonoff-zbdongle-p',
+        name: 'SONOFF ZBDongle-P',
+        manufacturerSlug: 'sonoff',
+        model: 'ZBDongle-P',
+        primaryProtocol: 'zigbee' as const,
+        description: 'Popular Zigbee coordinator USB dongle.',
+      },
+      {
+        slug: 'skyconnect',
+        name: 'Home Assistant SkyConnect',
+        manufacturerSlug: 'home-assistant',
+        model: 'SkyConnect',
+        primaryProtocol: 'multi' as const,
+        description: 'Home Assistant Zigbee and Thread radio adapter.',
+      },
+    ]
+
+    for (const product of infrastructureProducts) {
+      const manufacturerId = await getManufacturerId(product.manufacturerSlug)
+
+      await db
+        .insert(products)
+        .values({
+          slug: product.slug,
+          name: product.name,
+          manufacturerId,
+          model: product.model,
+          categoryId: gatewaysCategoryId,
+          primaryProtocol: product.primaryProtocol,
+          productRole: 'infrastructure',
+          description: product.description,
+          status: 'published',
+        })
+        .onConflictDoUpdate({
+          target: products.slug,
+          set: {
+            name: product.name,
+            manufacturerId,
+            model: product.model,
+            categoryId: gatewaysCategoryId,
+            primaryProtocol: product.primaryProtocol,
+            productRole: 'infrastructure',
+            description: product.description,
+            status: 'published',
+            updatedAt: new Date(),
+          },
+        })
+    }
+
+    const hardwareSupportData = [
+      {
+        integrationSlug: 'zigbee2mqtt',
+        productSlug: 'sonoff-zbdongle-p',
+        requirementType: 'supported' as const,
+        notes: 'Common coordinator option for Zigbee2MQTT.',
+      },
+      {
+        integrationSlug: 'zha',
+        productSlug: 'skyconnect',
+        requirementType: 'supported' as const,
+        notes: 'Official Home Assistant radio hardware.',
+      },
+    ]
+
+    const getProductId = async (slug: string) => {
+      const [product] = await db.select().from(products).where(eq(products.slug, slug)).limit(1)
+      return product?.id || null
+    }
+
+    for (const support of hardwareSupportData) {
+      const integrationId = await getIntegrationId(support.integrationSlug)
+      const productId = await getProductId(support.productSlug)
+
+      if (!integrationId || !productId) continue
+
+      await db
+        .insert(integrationHardwareSupport)
+        .values({
+          integrationId,
+          productId,
+          requirementType: support.requirementType,
+          notes: support.notes,
+        })
+        .onConflictDoUpdate({
+          target: [integrationHardwareSupport.integrationId, integrationHardwareSupport.productId],
+          set: {
+            requirementType: support.requirementType,
+            notes: support.notes,
+            updatedAt: new Date(),
+          },
+        })
+    }
+
+    console.log(
+      `✓ Seeded ${platformData.length} platforms, ${integrationData.length} integrations, ${commercialHubData.length} commercial hubs, and ${infrastructureProducts.length} infrastructure products`,
+    )
 
     console.log('\n✨ Database seeding completed successfully!')
   } catch (error) {

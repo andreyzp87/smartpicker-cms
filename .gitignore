@@ -61,3 +61,6 @@ redis_data/
 *.pid
 *.seed
 *.pid.lock
+
+#docs
+docs/implementation-reference.md

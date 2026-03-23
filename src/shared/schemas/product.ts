@@ -1,8 +1,18 @@
 import { z } from 'zod'
 
-export const protocolSchema = z.enum(['zigbee', 'zwave', 'matter', 'wifi', 'thread', 'bluetooth'])
+export const protocolSchema = z.enum([
+  'zigbee',
+  'zwave',
+  'matter',
+  'wifi',
+  'thread',
+  'bluetooth',
+  'proprietary',
+  'multi',
+])
 
 export const productStatusSchema = z.enum(['draft', 'published', 'archived'])
+export const productRoleSchema = z.enum(['endpoint', 'infrastructure'])
 
 export const productCreateSchema = z.object({
   name: z.string().min(1).max(255),
@@ -15,6 +25,7 @@ export const productCreateSchema = z.object({
   model: z.string().max(255).optional().nullable(),
   categoryId: z.number().int().positive().optional().nullable(),
   primaryProtocol: protocolSchema.optional().nullable(),
+  productRole: productRoleSchema.default('endpoint'),
   localControl: z.boolean().optional().nullable(),
   cloudDependent: z.boolean().optional().nullable(),
   requiresHub: z.boolean().optional().nullable(),
@@ -46,6 +57,7 @@ export const paginationSchema = z.object({
 // Inferred types
 export type Protocol = z.infer<typeof protocolSchema>
 export type ProductStatus = z.infer<typeof productStatusSchema>
+export type ProductRole = z.infer<typeof productRoleSchema>
 export type ProductCreate = z.infer<typeof productCreateSchema>
 export type ProductUpdate = z.infer<typeof productUpdateSchema>
 export type ProductFilter = z.infer<typeof productFilterSchema>
