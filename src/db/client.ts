@@ -8,6 +8,10 @@ dotenv.config()
 const connectionString =
   process.env.DATABASE_URL || 'postgres://smartpicker:development@localhost:5432/smartpicker'
 
-const client = postgres(connectionString)
+export const dbClient = postgres(connectionString)
 
-export const db = drizzle(client, { schema })
+export const db = drizzle(dbClient, { schema })
+
+export async function closeDbConnection() {
+  await dbClient.end()
+}
