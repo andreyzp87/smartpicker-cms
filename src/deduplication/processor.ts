@@ -1,5 +1,6 @@
 import { db } from '../db/client'
 import {
+  compatibilityEvidence,
   productHubCompatibility,
   productIntegrationCompatibility,
   productSources,
@@ -10,7 +11,7 @@ import {
 } from '../db/schema'
 import { eq } from 'drizzle-orm'
 import { logger } from '../lib/logger'
-import { findDuplicates } from './finder'
+import { findDuplicates, type ProductWithSource } from './finder'
 import { pickCanonicalProduct, getDuplicates, determinePrimarySource } from './picker'
 
 export interface DeduplicationResult {
@@ -23,6 +24,290 @@ export interface DeduplicationResult {
 export interface DeduplicationOptions {
   dryRun?: boolean
   verbose?: boolean
+}
+
+type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0]
+type IntegrationCompatibilityRow = typeof productIntegrationCompatibility.$inferSelect
+
+const REVIEW_STATE_PRIORITY: Record<IntegrationCompatibilityRow['reviewState'], number> = {
+  rejected: 0,
+  pending: 1,
+  approved: 2,
+}
+
+const COMPATIBILITY_STATUS_PRIORITY: Record<IntegrationCompatibilityRow['status'], number> = {
+  untested: 1,
+  incompatible: 2,
+  reported: 3,
+  supported: 4,
+  verified: 5,
+}
+
+function getEarlierDate(first: Date | null, second: Date | null): Date | null {
+  if (!first) {
+    return second
+  }
+
+  if (!second) {
+    return first
+  }
+
+  return first.getTime() <= second.getTime() ? first : second
+}
+
+function getLaterDate(first: Date | null, second: Date | null): Date | null {
+  if (!first) {
+    return second
+  }
+
+  if (!second) {
+    return first
+  }
+
+  return first.getTime() >= second.getTime() ? first : second
+}
+
+function shouldPreferCandidate<
+  T extends Pick<
+    IntegrationCompatibilityRow,
+    'reviewState' | 'canonicalSource' | 'status'
+  >,
+>(existing: T, candidate: T): boolean {
+  const reviewStateDelta =
+    REVIEW_STATE_PRIORITY[candidate.reviewState] - REVIEW_STATE_PRIORITY[existing.reviewState]
+
+  if (reviewStateDelta !== 0) {
+    return reviewStateDelta > 0
+  }
+
+  const existingIsManual = existing.canonicalSource === 'manual'
+  const candidateIsManual = candidate.canonicalSource === 'manual'
+
+  if (existingIsManual !== candidateIsManual) {
+    return candidateIsManual
+  }
+
+  return COMPATIBILITY_STATUS_PRIORITY[candidate.status] > COMPATIBILITY_STATUS_PRIORITY[existing.status]
+}
+
+async function reassignIntegrationEvidence(
+  tx: Transaction,
+  sourceCompatibilityId: number,
+  targetCompatibilityId: number,
+): Promise<void> {
+  const existingEvidence = await tx
+    .select({
+      id: compatibilityEvidence.id,
+      source: compatibilityEvidence.source,
+      sourceRecordKey: compatibilityEvidence.sourceRecordKey,
+    })
+    .from(compatibilityEvidence)
+    .where(eq(compatibilityEvidence.productIntegrationCompatibilityId, targetCompatibilityId))
+
+  const existingKeys = new Set(
+    existingEvidence.map((entry) => `${entry.source}:${entry.sourceRecordKey}`),
+  )
+
+  const sourceEvidence = await tx
+    .select({
+      id: compatibilityEvidence.id,
+      source: compatibilityEvidence.source,
+      sourceRecordKey: compatibilityEvidence.sourceRecordKey,
+    })
+    .from(compatibilityEvidence)
+    .where(eq(compatibilityEvidence.productIntegrationCompatibilityId, sourceCompatibilityId))
+
+  for (const entry of sourceEvidence) {
+    const evidenceKey = `${entry.source}:${entry.sourceRecordKey}`
+
+    if (existingKeys.has(evidenceKey)) {
+      await tx.delete(compatibilityEvidence).where(eq(compatibilityEvidence.id, entry.id))
+      continue
+    }
+
+    await tx
+      .update(compatibilityEvidence)
+      .set({
+        productIntegrationCompatibilityId: targetCompatibilityId,
+      })
+      .where(eq(compatibilityEvidence.id, entry.id))
+
+    existingKeys.add(evidenceKey)
+  }
+}
+
+async function reassignHubEvidence(
+  tx: Transaction,
+  sourceCompatibilityId: number,
+  targetCompatibilityId: number,
+): Promise<void> {
+  const existingEvidence = await tx
+    .select({
+      id: compatibilityEvidence.id,
+      source: compatibilityEvidence.source,
+      sourceRecordKey: compatibilityEvidence.sourceRecordKey,
+    })
+    .from(compatibilityEvidence)
+    .where(eq(compatibilityEvidence.productHubCompatibilityId, targetCompatibilityId))
+
+  const existingKeys = new Set(
+    existingEvidence.map((entry) => `${entry.source}:${entry.sourceRecordKey}`),
+  )
+
+  const sourceEvidence = await tx
+    .select({
+      id: compatibilityEvidence.id,
+      source: compatibilityEvidence.source,
+      sourceRecordKey: compatibilityEvidence.sourceRecordKey,
+    })
+    .from(compatibilityEvidence)
+    .where(eq(compatibilityEvidence.productHubCompatibilityId, sourceCompatibilityId))
+
+  for (const entry of sourceEvidence) {
+    const evidenceKey = `${entry.source}:${entry.sourceRecordKey}`
+
+    if (existingKeys.has(evidenceKey)) {
+      await tx.delete(compatibilityEvidence).where(eq(compatibilityEvidence.id, entry.id))
+      continue
+    }
+
+    await tx
+      .update(compatibilityEvidence)
+      .set({
+        productHubCompatibilityId: targetCompatibilityId,
+      })
+      .where(eq(compatibilityEvidence.id, entry.id))
+
+    existingKeys.add(evidenceKey)
+  }
+}
+
+async function mergeIntegrationCompatibilityRows(
+  tx: Transaction,
+  canonical: ProductWithSource,
+  duplicates: ProductWithSource[],
+): Promise<void> {
+  const canonicalRows = await tx
+    .select()
+    .from(productIntegrationCompatibility)
+    .where(eq(productIntegrationCompatibility.productId, canonical.id))
+
+  const compatibilityByIntegrationId = new Map(
+    canonicalRows.map((row) => [row.integrationId, row]),
+  )
+
+  for (const duplicate of duplicates) {
+    const duplicateRows = await tx
+      .select()
+      .from(productIntegrationCompatibility)
+      .where(eq(productIntegrationCompatibility.productId, duplicate.id))
+
+    for (const duplicateRow of duplicateRows) {
+      const existingRow = compatibilityByIntegrationId.get(duplicateRow.integrationId)
+
+      if (!existingRow) {
+        const [movedRow] = await tx
+          .update(productIntegrationCompatibility)
+          .set({ productId: canonical.id })
+          .where(eq(productIntegrationCompatibility.id, duplicateRow.id))
+          .returning()
+
+        compatibilityByIntegrationId.set(duplicateRow.integrationId, movedRow)
+        continue
+      }
+
+      await reassignIntegrationEvidence(tx, duplicateRow.id, existingRow.id)
+
+      const preferDuplicate = shouldPreferCandidate(existingRow, duplicateRow)
+      const [mergedRow] = await tx
+        .update(productIntegrationCompatibility)
+        .set({
+          status: preferDuplicate ? duplicateRow.status : existingRow.status,
+          reviewState: preferDuplicate ? duplicateRow.reviewState : existingRow.reviewState,
+          supportSummary: preferDuplicate
+            ? (duplicateRow.supportSummary ?? existingRow.supportSummary)
+            : (existingRow.supportSummary ?? duplicateRow.supportSummary),
+          internalNotes: preferDuplicate
+            ? (duplicateRow.internalNotes ?? existingRow.internalNotes)
+            : (existingRow.internalNotes ?? duplicateRow.internalNotes),
+          canonicalSource: preferDuplicate ? duplicateRow.canonicalSource : existingRow.canonicalSource,
+          firstSeenAt: getEarlierDate(existingRow.firstSeenAt, duplicateRow.firstSeenAt),
+          lastConfirmedAt: getLaterDate(existingRow.lastConfirmedAt, duplicateRow.lastConfirmedAt),
+          updatedAt: getLaterDate(existingRow.updatedAt, duplicateRow.updatedAt) ?? new Date(),
+        })
+        .where(eq(productIntegrationCompatibility.id, existingRow.id))
+        .returning()
+
+      await tx
+        .delete(productIntegrationCompatibility)
+        .where(eq(productIntegrationCompatibility.id, duplicateRow.id))
+
+      compatibilityByIntegrationId.set(duplicateRow.integrationId, mergedRow)
+    }
+  }
+}
+
+async function mergeHubCompatibilityRows(
+  tx: Transaction,
+  canonical: ProductWithSource,
+  duplicates: ProductWithSource[],
+): Promise<void> {
+  const canonicalRows = await tx
+    .select()
+    .from(productHubCompatibility)
+    .where(eq(productHubCompatibility.productId, canonical.id))
+
+  const compatibilityByHubId = new Map(canonicalRows.map((row) => [row.hubId, row]))
+
+  for (const duplicate of duplicates) {
+    const duplicateRows = await tx
+      .select()
+      .from(productHubCompatibility)
+      .where(eq(productHubCompatibility.productId, duplicate.id))
+
+    for (const duplicateRow of duplicateRows) {
+      const existingRow = compatibilityByHubId.get(duplicateRow.hubId)
+
+      if (!existingRow) {
+        const [movedRow] = await tx
+          .update(productHubCompatibility)
+          .set({ productId: canonical.id })
+          .where(eq(productHubCompatibility.id, duplicateRow.id))
+          .returning()
+
+        compatibilityByHubId.set(duplicateRow.hubId, movedRow)
+        continue
+      }
+
+      await reassignHubEvidence(tx, duplicateRow.id, existingRow.id)
+
+      const preferDuplicate = shouldPreferCandidate(existingRow, duplicateRow)
+      const [mergedRow] = await tx
+        .update(productHubCompatibility)
+        .set({
+          status: preferDuplicate ? duplicateRow.status : existingRow.status,
+          reviewState: preferDuplicate ? duplicateRow.reviewState : existingRow.reviewState,
+          supportSummary: preferDuplicate
+            ? (duplicateRow.supportSummary ?? existingRow.supportSummary)
+            : (existingRow.supportSummary ?? duplicateRow.supportSummary),
+          internalNotes: preferDuplicate
+            ? (duplicateRow.internalNotes ?? existingRow.internalNotes)
+            : (existingRow.internalNotes ?? duplicateRow.internalNotes),
+          canonicalSource: preferDuplicate ? duplicateRow.canonicalSource : existingRow.canonicalSource,
+          firstSeenAt: getEarlierDate(existingRow.firstSeenAt, duplicateRow.firstSeenAt),
+          lastConfirmedAt: getLaterDate(existingRow.lastConfirmedAt, duplicateRow.lastConfirmedAt),
+          updatedAt: getLaterDate(existingRow.updatedAt, duplicateRow.updatedAt) ?? new Date(),
+        })
+        .where(eq(productHubCompatibility.id, existingRow.id))
+        .returning()
+
+      await tx
+        .delete(productHubCompatibility)
+        .where(eq(productHubCompatibility.id, duplicateRow.id))
+
+      compatibilityByHubId.set(duplicateRow.hubId, mergedRow)
+    }
+  }
 }
 
 /**
@@ -71,65 +356,66 @@ export async function deduplicateProducts(
       continue
     }
 
-    // ACTUAL MERGE PROCESS
+    await db.transaction(async (tx) => {
+      // Step 1: Migrate all raw_imports from duplicates to canonical.
+      for (const duplicate of duplicates) {
+        await tx
+          .update(rawImports)
+          .set({ productId: canonical.id })
+          .where(eq(rawImports.productId, duplicate.id))
+      }
 
-    // Step 1: Migrate all raw_imports from duplicates to canonical
-    for (const duplicate of duplicates) {
-      await db
-        .update(rawImports)
-        .set({ productId: canonical.id })
-        .where(eq(rawImports.productId, duplicate.id))
-    }
+      // Step 2: Merge compatibility rows without violating unique constraints.
+      await mergeIntegrationCompatibilityRows(tx, canonical, duplicates)
+      await mergeHubCompatibilityRows(tx, canonical, duplicates)
 
-    // Step 2: Migrate compatibility records from duplicates to canonical
-    for (const duplicate of duplicates) {
-      await db
-        .update(productIntegrationCompatibility)
-        .set({ productId: canonical.id })
-        .where(eq(productIntegrationCompatibility.productId, duplicate.id))
+      // Step 3: Create product_sources entries for all sources.
+      const primarySourceId = determinePrimarySource(canonical, group.products)
 
-      await db
-        .update(productHubCompatibility)
-        .set({ productId: canonical.id })
-        .where(eq(productHubCompatibility.productId, duplicate.id))
-    }
+      if (primarySourceId !== canonical.primarySourceId) {
+        await tx
+          .update(products)
+          .set({
+            primarySourceId,
+            updatedAt: new Date(),
+          })
+          .where(eq(products.id, canonical.id))
+      }
 
-    // Step 3: Create product_sources entries for all sources
-    const primarySourceId = determinePrimarySource(canonical, group.products)
+      for (const product of group.products) {
+        if (product.primarySourceId === null) {
+          continue
+        }
 
-    for (const product of group.products) {
-      const isPrimary = product.primarySourceId === primarySourceId
+        const isPrimary = product.primarySourceId === primarySourceId
+        const insertedRows = await tx
+          .insert(productSources)
+          .values({
+            productId: canonical.id,
+            rawImportId: product.primarySourceId,
+            isPrimary,
+            mergeConfidence: 'exact',
+            mergedBy: 'auto',
+            mergedAt: new Date(),
+          })
+          .onConflictDoNothing()
+          .returning({ id: productSources.id })
 
-      await db
-        .insert(productSources)
-        .values({
-          productId: canonical.id,
-          rawImportId: product.primarySourceId,
-          isPrimary,
-          mergeConfidence: 'exact',
-          mergedBy: 'auto',
-          mergedAt: new Date(),
-        })
-        .onConflictDoNothing() // Skip if already exists
+        productSourcesCreated += insertedRows.length
+      }
 
-      productSourcesCreated++
-    }
+      // Step 4: Delete protocol-specific details for duplicate products.
+      for (const duplicate of duplicates) {
+        await tx.delete(zigbeeDetails).where(eq(zigbeeDetails.productId, duplicate.id))
+        await tx.delete(zwaveDetails).where(eq(zwaveDetails.productId, duplicate.id))
+      }
 
-    // Step 4: Delete protocol-specific details for duplicate products
-    for (const duplicate of duplicates) {
-      // Delete zigbee details if they exist
-      await db.delete(zigbeeDetails).where(eq(zigbeeDetails.productId, duplicate.id))
-
-      // Delete zwave details if they exist
-      await db.delete(zwaveDetails).where(eq(zwaveDetails.productId, duplicate.id))
-    }
-
-    // Step 5: Delete duplicate products
-    // Now safe to delete since we've removed all foreign key dependencies
-    for (const duplicate of duplicates) {
-      await db.delete(products).where(eq(products.id, duplicate.id))
-      productsDeleted++
-    }
+      // Step 5: Delete duplicate products once foreign key dependencies are gone.
+      for (const duplicate of duplicates) {
+        await tx.delete(products).where(eq(products.id, duplicate.id))
+        productsDeleted++
+      }
+    })
 
     productsKept++
   }

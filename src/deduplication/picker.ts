@@ -29,8 +29,8 @@ export function pickCanonicalProduct(products: ProductWithSource[]): ProductWith
   // Sort by priority
   const sorted = [...products].sort((a, b) => {
     // 1. Compare source priority
-    const aPriority = SOURCE_PRIORITY[a.source] || 0
-    const bPriority = SOURCE_PRIORITY[b.source] || 0
+    const aPriority = a.source ? (SOURCE_PRIORITY[a.source] ?? 0) : 0
+    const bPriority = b.source ? (SOURCE_PRIORITY[b.source] ?? 0) : 0
 
     if (aPriority !== bPriority) {
       return bPriority - aPriority // Higher priority first
@@ -48,10 +48,21 @@ export function pickCanonicalProduct(products: ProductWithSource[]): ProductWith
  */
 export function determinePrimarySource(
   canonicalProduct: ProductWithSource,
-  _allProducts: ProductWithSource[],
-): number {
-  // The canonical product's primary source becomes the primary source for the merged product
-  return canonicalProduct.primarySourceId
+  allProducts: ProductWithSource[],
+): number | null {
+  if (canonicalProduct.primarySourceId !== null) {
+    return canonicalProduct.primarySourceId
+  }
+
+  const sourceBackedProducts = allProducts.filter(
+    (product) => product.primarySourceId !== null,
+  )
+
+  if (sourceBackedProducts.length === 0) {
+    return null
+  }
+
+  return pickCanonicalProduct(sourceBackedProducts).primarySourceId
 }
 
 /**

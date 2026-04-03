@@ -10,8 +10,8 @@ export interface ProductWithSource {
   model: string | null
   manufacturerId: number
   manufacturerName: string
-  primarySourceId: number
-  source: string
+  primarySourceId: number | null
+  source: string | null
 }
 
 export interface DuplicateGroup {
